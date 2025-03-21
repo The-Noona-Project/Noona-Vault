@@ -1,8 +1,4 @@
----
 
-### `noona-vault/README.md`
-
-```markdown
 # Noona-Vault
 
 **Noona-Vault** is the central data handler of The Noona Project. It exposes a REST API for CRUD operations and connects to internal MongoDB and Redis instances to persist and cache data.
@@ -30,4 +26,4 @@
     "title": "System Alert",
     "timestamp": "2025-03-21T15:00:00Z"
   }
-}
+}```
