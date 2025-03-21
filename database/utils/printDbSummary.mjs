@@ -1,42 +1,72 @@
-// /utils/printDbSummary.mjs
+// ✅ /database/utils/printDbSummary.mjs
 
 import chalk from 'chalk';
-import Table from 'cli-table3';
+import { table } from 'table';
 
 /**
- * @param {Array<{
- *   name: string,
- *   status: boolean,
- *   info: string
- * }>} dbResults
+ * Truncates long strings in the middle with ellipsis.
+ * @param {string} str
+ * @param {number} max
+ * @returns {string}
+ */
+function truncateMiddle(str = '', max = 30) {
+    if (str.length <= max) return str;
+    return str.slice(0, 14) + '…' + str.slice(-15);
+}
+
+/**
+ * Prints a formatted database initialization summary table.
+ *
+ * @param {Array<{ name: string, status: boolean, info: string }>} dbResults
  */
 export function printDbSummary(dbResults) {
     console.log('');
     console.log(chalk.cyan('[Noona-Vault] 🔌 Database Initialization Summary\n'));
 
-    const table = new Table({
-        head: ['Database', 'Connection Info', 'Status'],
-        colWidths: [12, 30, 15]
-    });
-
-    for (const db of dbResults) {
-        table.push([
+    const rows = [
+        ['Database', 'Connection Info', 'Status'],
+        ...dbResults.map(db => [
             db.name,
-            db.info,
+            truncateMiddle(db.info),
             db.status ? chalk.green('🟢 Connected') : chalk.red('🔴 Failed')
-        ]);
-    }
+        ])
+    ];
 
-    console.log(table.toString());
+    const config = {
+        border: {
+            topBody: `─`,
+            topJoin: `┬`,
+            topLeft: `┌`,
+            topRight: `┐`,
+            bottomBody: `─`,
+            bottomJoin: `┴`,
+            bottomLeft: `└`,
+            bottomRight: `┘`,
+            bodyLeft: `│`,
+            bodyRight: `│`,
+            bodyJoin: `│`,
+            joinBody: `─`,
+            joinLeft: `├`,
+            joinRight: `┤`,
+            joinJoin: `┼`
+        },
+        columns: {
+            0: { width: 12 },
+            1: { width: 32 },
+            2: { width: 15 }
+        }
+    };
+
+    console.log(table(rows, config));
 
     const successCount = dbResults.filter(d => d.status).length;
     const total = dbResults.length;
 
-    console.log('');
     if (successCount === total) {
-        console.log(chalk.green(`✅ All ${total}/${total} databases initialized.`));
+        console.log(chalk.green(`🧠  Database grid online. All systems nominal.`));
     } else {
-        console.log(chalk.yellow(`⚠️  ${successCount}/${total} databases initialized.`));
+        console.log(chalk.red(`⚠️  ${total - successCount} database(s) failed to initialize.`));
     }
+
     console.log('');
 }

@@ -1,11 +1,12 @@
+// ✅ Updated /database/mongo/mongo.mjs
 import chalk from 'chalk';
 import mongoose from 'mongoose';
 
+let mongoDb = null;
+
 /**
  * Initializes MongoDB via Mongoose.
- * Returns true on success, false on failure.
- *
- * @returns {Promise<boolean>}
+ * @returns {Promise<{success: boolean, message: string, url: string}>}
  */
 export default async function initMongo() {
     const mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017/noona';
@@ -20,23 +21,28 @@ export default async function initMongo() {
             useUnifiedTopology: true
         });
 
-        console.log(chalk.green(`[MongoDB] Connected successfully to: ${mongoURL}`));
-        global.noonaMongo = mongoose.connection;
+        mongoDb = mongoose.connection;
+        global.noonaMongo = mongoDb;
 
-        mongoose.connection.on('error', (err) =>
+        mongoDb.on('error', (err) =>
             console.error(chalk.red('[MongoDB] Connection error:'), err.message)
         );
 
-        mongoose.connection.on('disconnected', () =>
+        mongoDb.on('disconnected', () =>
             console.warn(chalk.yellow('[MongoDB] Disconnected from database.'))
         );
 
+        console.log(chalk.green(`[MongoDB] Connected successfully to: ${mongoURL}`));
         console.log(chalk.green('[Init] ✅ MongoDB initialized successfully.'));
-        return true;
+        return { success: true, message: 'Connected', url: mongoURL };
     } catch (error) {
         console.error(chalk.red('[MongoDB] ❌ Connection failed:'), error.message);
-        return false;
+        return { success: false, message: error.message, url: mongoURL };
     } finally {
         console.log(chalk.gray('----------------------------------------'));
     }
+}
+
+export function getMongoDb() {
+    return mongoDb;
 }

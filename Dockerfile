@@ -17,4 +17,4 @@ RUN npm install
 COPY . .
 
 # Default command
-CMD ["node", "initmain.mjs"]
+CMD ["npm", "start"]

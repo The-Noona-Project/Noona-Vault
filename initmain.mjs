@@ -1,39 +1,53 @@
-// /initmain.mjs
+// ✅ /initmain.mjs (final polished order)
 
-import 'dotenv/config';
 import chalk from 'chalk';
-import { startServer } from './noona/restAPI/server.mjs';
 import { initializeDatabases } from './database/databaseManager.mjs';
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import morgan from 'morgan';
+import mountRoutes from './noona/restAPI/routemanager.mjs';
 
-// Global safety net
-process.on('unhandledRejection', (reason) => {
-    console.error('[Global UnhandledRejection]', reason?.message || reason);
-});
+dotenv.config();
 
-process.on('uncaughtException', (err) => {
-    console.error('[Global UncaughtException]', err?.message || err);
-});
+const app = express();
+const PORT = process.env.PORT || 3120;
 
-/**
- * Main entry for Noona-Vault.
- * Boots databases and REST API server.
- */
-async function init() {
-    console.log(chalk.blueBright('[Noona-Vault] Booting up Vault System...\n'));
+console.log('');
+console.log(chalk.bold.greenBright('[Noona-Vault] Booting up Vault System...'));
 
-    const dbResults = await initializeDatabases(); // handles logging + summary
+(async () => {
+    // Init databases
+    await initializeDatabases();
 
-    console.log(
-        chalk.greenBright(`[Noona-Vault] ✅ Database Initialization Complete (${dbResults.successCount}/${dbResults.totalCount} successful)\n`)
-    );
+    console.log(chalk.gray('----------------------------------------'));
+    console.log('');
 
-    try {
-        await startServer();
-        console.log(chalk.green('[Noona-Vault] ✅ REST API is online.'));
-    } catch (err) {
-        console.error(chalk.red('[Noona-Vault] ❌ Failed to start REST API:'), err.message);
-        process.exit(1);
-    }
-}
+    /**
+     * Global middleware stack
+     */
+    app.use(cors());
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
+    app.use(morgan('dev'));
 
-init();
+    /**
+     * Route mount (after DBs)
+     */
+    console.log(chalk.bold.cyan('[RouteManager] 🔁 Scanning and registering versioned REST routes...'));
+    mountRoutes(app);
+
+    console.log(chalk.gray('----------------------------------------'));
+    console.log('');
+
+    /**
+     * Start server after routes and DBs are up
+     */
+    app.listen(PORT, () => {
+        console.log(chalk.green('[REST API] ✅ Online and authenticated.'));
+        console.log(chalk.cyan(`[REST API] Listening on port ${PORT}`));
+        console.log('');
+        console.log(chalk.bold.cyan('[Noona-Vault] 🟢 Vault is ready and awaiting secure orders.'));
+        console.log('');
+    });
+})();

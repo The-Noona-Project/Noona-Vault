@@ -15,7 +15,6 @@ export default function mountRoutes(app) {
     console.log('');
     console.log(chalk.bold.cyan(`[RouteManager] 🔁 Scanning and registering versioned REST routes...`));
 
-    // Recursively find and mount route files
     function walkAndMount(dirPath) {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
@@ -24,9 +23,14 @@ export default function mountRoutes(app) {
 
             if (entry.isDirectory()) {
                 walkAndMount(fullPath);
-            } else if (entry.isFile() && entry.name.endsWith('.mjs')) {
+            } else if (
+                entry.isFile() &&
+                entry.name.endsWith('.mjs') &&
+                entry.name !== 'mongoHandler.mjs' && // ✅ Skip helper files
+                entry.name !== 'validateAndRoute.mjs'
+            ) {
                 const routePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
-                const routePrefix = '/' + routePath.split('/')[0]; // e.g., /v1
+                const routePrefix = '/' + routePath.split('/')[0];
 
                 import(fullPath)
                     .then((routeModule) => {
