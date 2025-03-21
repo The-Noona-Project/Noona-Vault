@@ -1,21 +1,29 @@
+
 # Noona-Vault
 
-*A secure stronghold for managing Noona’s database needs.*
+**Noona-Vault** is the central data handler of The Noona Project. It exposes a REST API for CRUD operations and connects to internal MongoDB and Redis instances to persist and cache data.
 
-## Overview
-Noona-Vault acts as the middleware for SQL and possibly Redis, ensuring smooth data handling for all other Noona components.
+---
 
 ## Features
-- Stores and manages user data, logs, and search history.
-- Handles metadata caching for improved speed.
-- Ensures stable interactions between Noona components.
 
-## Planned Enhancements
-- Redis implementation for optimized query performance.
-- Backup and recovery features.
+- Accepts standardized JSON requests from other Noona services
+- Handles create/read/update/delete operations
+- Dynamic MongoDB collections via the `target` field
+- Redis support for fast caching and pub-sub (planned)
+- Verifies JWT tokens from `noona-warden` for secure access
 
-## Installation
-Coming soon.
+---
 
-## License
-This project is licensed under the **GNU General Public License v2.0 (GPL-2.0)**. See the [LICENSE](LICENSE) file for details.
+## API Payload Structure
+
+```json
+{
+  "database": "mongo",
+  "action": "create",
+  "target": "pastNotify",
+  "data": {
+    "title": "System Alert",
+    "timestamp": "2025-03-21T15:00:00Z"
+  }
+}```
