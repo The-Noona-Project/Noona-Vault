@@ -1,58 +1,56 @@
 // /database/databaseManager.mjs
 
-import chalk from 'chalk';
 import initMongo from './mongo/mongo.mjs';
 import initRedis from './redis/redis.mjs';
 import initMariaDB from './mariadb/mariadb.mjs';
 import initMilvus from './milvus/milvus.mjs';
+import { printDbSummary } from './utils/printDbSummary.mjs';
+import chalk from 'chalk';
 
-/**
- * Initializes all database modules and prints status.
- *
- * @returns {Promise<void>}
- */
-export async function initializeDatabases() {
-    console.log(chalk.yellowBright('[Noona-Vault] 🔌 Beginning database initialization...\n'));
-
-    const results = [];
-
-    results.push(await initialize('MongoDB', initMongo));
-    results.push(await initialize('Redis', initRedis));
-    results.push(await initialize('MariaDB', initMariaDB));
-    results.push(await initialize('Milvus', initMilvus));
-
-    const total = results.length;
-    const success = results.filter(Boolean).length;
-
-    const statusLine = `[Noona-Vault] ⚙️ Database initialization complete (${success}/${total} successful)\n`;
-    console.log(success === total ? chalk.green(statusLine) : chalk.yellow(statusLine));
+function printBlockStart(name) {
+    console.log(chalk.gray('----------------------------------------'));
+    console.log(chalk.cyan(`[Init] Starting ${name}...`));
 }
 
-/**
- * Wrapper to run a database initializer with logs.
- *
- * @param {string} name - DB display name
- * @param {Function} initFunction - DB initializer (returns boolean)
- * @returns {Promise<boolean>}
- */
-async function initialize(name, initFunction) {
-    console.log(chalk.cyan(`[Init] Starting ${name}...`));
+function shorten(str = '', max = 35) {
+    return str.length > max ? str.slice(0, 15) + '…' + str.slice(-15) : str;
+}
 
-    try {
-        const success = await initFunction();
+export async function initializeDatabases() {
+    const results = [];
 
-        if (success) {
-            console.log(chalk.green(`[Init] ✅ ${name} initialized successfully.`));
-        } else {
-            console.warn(chalk.red(`[Init] ❌ ${name} failed to initialize.`));
-        }
+    printBlockStart('MongoDB');
+    const mongo = await initMongo();
+    results.push({
+        name: 'MongoDB',
+        status: mongo,
+        info: shorten(process.env.MONGO_URL || 'localhost:27017/noona')
+    });
 
-        return success;
-    } catch (err) {
-        console.warn(chalk.red(`[Init] ❌ ${name} threw an exception.`));
-        console.warn(chalk.gray(`[Init] Reason: ${err?.message || err}`));
-        return false;
-    } finally {
-        console.log(chalk.gray('----------------------------------------'));
-    }
+    printBlockStart('Redis');
+    const redis = await initRedis();
+    results.push({
+        name: 'Redis',
+        status: redis,
+        info: `${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`
+    });
+
+    printBlockStart('MariaDB');
+    const mariadb = await initMariaDB();
+    results.push({
+        name: 'MariaDB',
+        status: mariadb,
+        info: `${process.env.MARIADB_USER || 'root'}@${process.env.MARIADB_HOST || 'localhost'}:${process.env.MARIADB_PORT || 3306}`
+    });
+
+    printBlockStart('Milvus');
+    const milvus = await initMilvus();
+    results.push({
+        name: 'Milvus',
+        status: milvus,
+        info: process.env.MILVUS_ADDRESS || 'localhost:19530'
+    });
+
+    console.log(chalk.gray('----------------------------------------'));
+    printDbSummary(results);
 }

@@ -1,5 +1,3 @@
-// /database/milvus/milvus.mjs
-
 import chalk from 'chalk';
 import { MilvusClient } from '@zilliz/milvus2-sdk-node';
 
@@ -12,6 +10,8 @@ import { MilvusClient } from '@zilliz/milvus2-sdk-node';
 export default async function initMilvus() {
     const address = process.env.MILVUS_ADDRESS || 'localhost:19530';
 
+    console.log(chalk.gray('----------------------------------------'));
+    console.log(chalk.cyan('[Init] Starting Milvus...'));
     console.log(chalk.cyan(`[Milvus] Attempting to connect to ${address}...`));
 
     try {
@@ -43,10 +43,13 @@ export default async function initMilvus() {
         console.log(chalk.green(`[Milvus] Collections:`), collections);
 
         global.noonaMilvus = client;
+        console.log(chalk.green('[Init] ✅ Milvus initialized successfully.'));
         return true;
     } catch (err) {
         console.error(chalk.red(`[Milvus] ❌ Connection failed.`));
         console.error(chalk.gray(`[Milvus] Reason: ${err?.message || 'Unknown'}`));
         return false;
+    } finally {
+        console.log(chalk.gray('----------------------------------------'));
     }
 }

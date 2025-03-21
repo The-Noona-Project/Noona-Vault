@@ -21,7 +21,11 @@ process.on('uncaughtException', (err) => {
 async function init() {
     console.log(chalk.blueBright('[Noona-Vault] Booting up Vault System...\n'));
 
-    await initializeDatabases(); // handles all logging inside
+    const dbResults = await initializeDatabases(); // handles logging + summary
+
+    console.log(
+        chalk.greenBright(`[Noona-Vault] ✅ Database Initialization Complete (${dbResults.successCount}/${dbResults.totalCount} successful)\n`)
+    );
 
     try {
         await startServer();

@@ -1,5 +1,3 @@
-// /database/mariadb/mariadb.mjs
-
 import chalk from 'chalk';
 import mysql from 'mysql2/promise';
 
@@ -16,6 +14,8 @@ export default async function initMariaDB() {
     const password = process.env.MARIADB_PASSWORD || '';
     const database = process.env.MARIADB_DATABASE || 'noona';
 
+    console.log(chalk.gray('----------------------------------------'));
+    console.log(chalk.cyan('[Init] Starting MariaDB...'));
     console.log(chalk.cyan(`[MariaDB] Attempting to connect to ${user}@${host}:${port} (${database})...`));
 
     try {
@@ -30,10 +30,13 @@ export default async function initMariaDB() {
         await connection.ping();
         console.log(chalk.green(`[MariaDB] Connected to ${host}:${port} | Database: ${database}`));
         global.noonaMariaDB = connection;
+        console.log(chalk.green('[Init] ✅ MariaDB initialized successfully.'));
         return true;
     } catch (error) {
         console.error(chalk.red(`[MariaDB] ❌ Connection failed.`));
         console.error(chalk.gray(`[MariaDB] Reason: ${error.message}`));
         return false;
+    } finally {
+        console.log(chalk.gray('----------------------------------------'));
     }
 }
