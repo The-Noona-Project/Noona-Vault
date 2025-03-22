@@ -6,6 +6,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import mountRoutes from './routemanager.mjs';
+import v1Routes from './v1/routes.mjs';
 
 // Load environment variables
 dotenv.config();
@@ -26,6 +27,9 @@ app.use(morgan('dev'));
  * Dynamically mount versioned API routes
  */
 mountRoutes(app);
+
+// Mount routes
+app.use('/v1', v1Routes);
 
 /**
  * Start HTTP server and log status once listening

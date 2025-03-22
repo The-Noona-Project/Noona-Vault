@@ -16,28 +16,28 @@ export default async function initMongo() {
     console.log(chalk.cyan(`[MongoDB] Attempting to connect to ${mongoURL}...`));
 
     try {
-        await mongoose.connect(mongoURL, {
+        const client = await mongoose.connect(mongoURL, {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
 
-        mongoDb = mongoose.connection;
-        global.noonaMongo = mongoDb;
-
-        mongoDb.on('error', (err) =>
+        mongoose.connection.on('error', (err) =>
             console.error(chalk.red('[MongoDB] Connection error:'), err.message)
         );
 
-        mongoDb.on('disconnected', () =>
+        mongoose.connection.on('disconnected', () =>
             console.warn(chalk.yellow('[MongoDB] Disconnected from database.'))
         );
 
+        mongoDb = mongoose.connection.db;
+        global.noonaMongo = mongoDb;
+
         console.log(chalk.green(`[MongoDB] Connected successfully to: ${mongoURL}`));
         console.log(chalk.green('[Init] ✅ MongoDB initialized successfully.'));
-        return { success: true, message: 'Connected', url: mongoURL };
+        return { client, db: mongoDb };
     } catch (error) {
-        console.error(chalk.red('[MongoDB] ❌ Connection failed:'), error.message);
-        return { success: false, message: error.message, url: mongoURL };
+        console.error('MongoDB connection error:', error);
+        return null;
     } finally {
         console.log(chalk.gray('----------------------------------------'));
     }
