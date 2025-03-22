@@ -17,6 +17,11 @@ let server = null; // <--- Store the server reference
 console.log('');
 console.log(chalk.bold.greenBright('[Noona-Vault] Booting up Vault System...'));
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.error(chalk.red('[Noona-Vault] ⚠️ Unhandled Promise Rejection:'));
+    console.error(chalk.gray(`Reason: ${reason?.message || reason}`));
+});
+
 /**
  * Main async startup block.
  * Initializes databases, mounts routes, and starts HTTP server.
