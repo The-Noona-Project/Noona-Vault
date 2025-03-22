@@ -1,0 +1,174 @@
+services:
+
+  noona-portal:
+    build: Noona-Portal/.
+    container_name: noona-portal
+    restart: unless-stopped
+    volumes:
+      - ./Noona-Portal/.env:/noona/portal/.env
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      noona-vault:
+        condition: service_healthy
+    networks:
+      - noona-network
+
+  noona-vault:
+    build: Noona-Vault/.
+    container_name: noona-vault
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mariadb:
+        condition: service_started
+      milvus:
+        condition: service_started
+    ports:
+      - "3120:3120"
+    volumes:
+      - ./Noona-Vault/.env:/noona/vault/.env
+    networks:
+      - noona-network
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3120/v1/system/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  mongodb:
+    image: mongo:latest
+    container_name: noona-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+      - ./Noona-Vault/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - noona-network
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE}
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:alpine
+    container_name: noona-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - noona-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+
+  mariadb:
+    image: mariadb:latest
+    container_name: noona-mariadb
+    restart: unless-stopped
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./Noona-Vault/init-mariadb:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - noona-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MARIADB_PASSWORD}
+      - MYSQL_DATABASE=${MARIADB_DATABASE}
+      - MYSQL_USER=${MARIADB_USER}
+      - MYSQL_PASSWORD=${MARIADB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "bash", "-c", "mariadb-admin ping --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  milvus:
+    image: milvusdb/milvus:v2.2.9
+    container_name: noona-milvus
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+    command: ["milvus", "run", "standalone"]
+    volumes:
+      - milvus-data:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    networks:
+      - noona-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd-data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    networks:
+      - noona-network
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - minio-data:/minio_data
+    command: minio server /minio_data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - noona-network
+
+networks:
+  noona-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+  redis-data:
+  mariadb-data:
+  milvus-data:
+  etcd-data:
+  minio-data: 
