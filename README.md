@@ -15,6 +15,35 @@
 
 ---
 
+## 📦 Installation & Setup  
+
+This bot is fully containerized with **Docker** for easy deployment.  
+
+### 🔧 Prerequisites  
+Before installing, make sure you have:  
+- [Docker](https://docs.docker.com/get-docker/) installed.
+
+### 🏗️ Docker Compose Installation  
+
+1️⃣ **Clone this repo:**
+```bash
+git clone https://github.com/The-Noona-Project/Noona-Vault.git
+```
+2️⃣ **Setup your configuration:**
+```bash
+cd Noona-Vault
+cp .env.example .env
+```
+Edit The .env file
+
+3️⃣ **Build and Start**:
+```bash
+docker network create noona-network
+
+docker compose up -d --build
+```
+---
+
 ## API Payload Structure
 
 ```json
