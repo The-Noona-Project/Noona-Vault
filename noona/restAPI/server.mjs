@@ -1,40 +1,28 @@
-// ✅ /noona/restAPI/server.mjs
+// /noona/restAPI/server.mjs
 
 import express from 'express';
-import chalk from 'chalk';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import morgan from 'morgan';
+import { printResult, printSection } from '../logger/logUtils.mjs';
 import mountRoutes from './routemanager.mjs';
-import v1Routes from './v1/routes.mjs';
+import { authLock } from './middleware/authLock.mjs';
 
-// Load environment variables
-dotenv.config();
-
-// Create Express app
 const app = express();
 const PORT = process.env.PORT || 3120;
 
-/**
- * Global middleware stack
- */
+// Global middleware stack
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-/**
- * Dynamically mount versioned API routes
- */
+// Apply authLock middleware to protect routes based on our configuration
+app.use('/v1', authLock);
+
+// Dynamically mount all versioned V1 routes
 mountRoutes(app);
 
-// Mount routes
-app.use('/v1', v1Routes);
-
-/**
- * Start HTTP server and log status once listening
- */
+// Start the HTTP server
 app.listen(PORT, () => {
-    console.log(chalk.green('[REST API] ✅ Online and authenticated.'));
-    console.log(chalk.cyan(`[REST API] Listening on port ${PORT}`));
+    printResult(`[REST API] Vault listening on port ${PORT}`);
 });

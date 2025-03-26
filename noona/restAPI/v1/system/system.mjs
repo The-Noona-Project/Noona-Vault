@@ -1,59 +1,49 @@
-// /noona/restAPI/v1/system/system.mjs
-
 import express from 'express';
-import jwt from 'jsonwebtoken';
-import chalk from 'chalk';
+import { printDebug } from '../../../logger/logUtils.mjs';
 
 const router = express.Router();
 
 /**
- * Health Check Endpoint
- * Returns basic status response to confirm API is alive.
+ * GET /v1/system/health
+ * Health check endpoint for Docker and readiness probes.
  */
-export function healthCheck(req, res) {
-    res.status(200).json({ status: 'healthy' });
-}
-
-/**
- * Version Info Endpoint
- * Reports the current version of the Noona-Vault service.
- */
-router.get('/version', (req, res) => {
-    const version = process.env.npm_package_version || '0.0.0-dev';
-    res.json({ version });
+router.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy', service: 'noona-vault' });
 });
 
 /**
- * Database Connection Status Endpoint
- * Checks which databases are initialized (based on global objects).
+ * GET /v1/system/version
+ * Returns the current Noona Vault version from package.json.
+ */
+router.get('/version', (req, res) => {
+    const version = process.env.npm_package_version || '0.0.0-dev';
+    return res.status(200).json({
+        success: true,
+        version,
+        service: 'noona-vault'
+    });
+});
+
+/**
+ * GET /v1/system/db-status
+ * Returns the status of all critical database connections.
  */
 router.get('/db-status', (req, res) => {
     const dbStatus = {
         mongo: !!global.noonaMongoClient,
         redis: !!global.noonaRedisClient,
         mariadb: !!global.noonaMariaConnection,
-        milvus: !!global.noonaMilvusClient
+        milvus: !!global.noonaMilvusClient // optional, for Oracle later
     };
 
-    const connectedCount = Object.values(dbStatus).filter(Boolean).length;
+    const onlineCount = Object.values(dbStatus).filter(Boolean).length;
+    printDebug(`[System] DB status: ${onlineCount}/4 online`);
 
-    console.log(chalk.blue(`[System] Database status requested. ${connectedCount}/4 online.`));
-    res.json(dbStatus);
+    return res.status(200).json({
+        success: true,
+        status: 'ok',
+        dbStatus
+    });
 });
 
-export function getToken(req, res) {
-    const service = req.params.service;
-    console.log(`[System] Token requested for service: ${service}`);
-    
-    const secret = process.env.JWT_SECRET || 'super-secret-key';
-    const token = jwt.sign({ service }, secret, { expiresIn: '1h' });
-    
-    res.status(200).json({ token });
-}
-
-export default function (app) {
-    router.get('/health', healthCheck);
-    router.get('/getToken/:service', getToken);
-    
-    app.use('/v1/system', router);
-}
+export default router;

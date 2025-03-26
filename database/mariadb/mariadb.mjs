@@ -1,22 +1,36 @@
-import chalk from 'chalk';
+// ✅ /database/mariadb/mariadb.mjs
+
 import mysql from 'mysql2/promise';
+import {
+    printSection,
+    printResult,
+    printError,
+    printDebug
+} from '../../noona/logger/logUtils.mjs';
+
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Initializes MariaDB connection using mysql2.
- * Returns true on success, false on failure.
+ * Initializes a MariaDB connection using mysql2/promise.
+ * On success, returns { connection }, else false.
  *
- * @returns {Promise<boolean>}
+ * @returns {Promise<{ connection: import('mysql2/promise').Connection } | false>}
  */
 export default async function initMariaDB() {
     const host = process.env.MARIADB_HOST || 'localhost';
-    const port = process.env.MARIADB_PORT || 3306;
+    const port = Number(process.env.MARIADB_PORT || 3306);
     const user = process.env.MARIADB_USER || 'root';
     const password = process.env.MARIADB_PASSWORD || '';
     const database = process.env.MARIADB_DATABASE || 'noona';
 
-    console.log(chalk.gray('----------------------------------------'));
-    console.log(chalk.cyan('[Init] Starting MariaDB...'));
-    console.log(chalk.cyan(`[MariaDB] Attempting to connect to ${user}@${host}:${port} (${database})...`));
+    printSection('MariaDB');
+
+    if (isDev) {
+        printDebug(`Host: ${host}`);
+        printDebug(`Port: ${port}`);
+        printDebug(`User: ${user}`);
+        printDebug(`Database: ${database}`);
+    }
 
     try {
         const connection = await mysql.createConnection({
@@ -28,15 +42,12 @@ export default async function initMariaDB() {
         });
 
         await connection.ping();
-        console.log(chalk.green(`[MariaDB] Connected to ${host}:${port} | Database: ${database}`));
-        global.noonaMariaDB = connection;
-        console.log(chalk.green('[Init] ✅ MariaDB initialized successfully.'));
-        return true;
+        printResult(`✅ Connected to ${host}:${port} [${database}]`);
+
+        return { connection };
     } catch (error) {
-        console.error(chalk.red(`[MariaDB] ❌ Connection failed.`));
-        console.error(chalk.gray(`[MariaDB] Reason: ${error.message}`));
+        printError('❌ MariaDB connection failed.');
+        printDebug(error.message);
         return false;
-    } finally {
-        console.log(chalk.gray('----------------------------------------'));
     }
 }

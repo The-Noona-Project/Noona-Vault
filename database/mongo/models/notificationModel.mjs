@@ -1,5 +1,7 @@
-import chalk from 'chalk';
-import { getMongoDb } from '../../mongo/mongo.mjs';
+// /database/mongo/models/notificationModel.mjs
+
+import { getMongoDb } from '../mongo.mjs';
+import { printError } from '../../../noona/logger/logUtils.mjs';
 
 /**
  * MongoDB model for handling library notification persistence.
@@ -13,9 +15,9 @@ export default class NotificationModel {
 
     /**
      * Saves notified item data to MongoDB.
-     * @param {string} batchId - The batch identifier.
-     * @param {Array<Object>} items - Array of notified item objects.
-     * @returns {Promise<Object>} Result object with success count.
+     * @param {string} batchId
+     * @param {Array<Object>} items
+     * @returns {Promise<Object>} { successCount }
      */
     async saveNotifiedItems(batchId, items) {
         try {
@@ -28,14 +30,14 @@ export default class NotificationModel {
             const result = await this.collection.insertMany(docs);
             return { successCount: result.insertedCount || 0 };
         } catch (err) {
-            console.error(chalk.red('[MongoDB] Failed to save notification batch:'), err.message);
-            return { successCount: 0 }; // Defensive fallback
+            printError('[MongoDB] Failed to save notification batch:');
+            printError(err.message);
+            return { successCount: 0 };
         }
     }
 
     /**
-     * Retrieves previously stored notification count.
-     * @returns {Promise<number>} Number of notifications stored.
+     * Returns the number of stored notifications.
      */
     async getStoredNotificationCount() {
         return await this.collection.countDocuments();

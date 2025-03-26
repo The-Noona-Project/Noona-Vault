@@ -1,71 +1,82 @@
+// ✅ /noona/restAPI/v1/notifications/kavitaHandler.mjs
+
+import express from 'express';
 import { getMongoDb } from '../../../../database/mongo/mongo.mjs';
+import { printError, printDebug } from '../../../logger/logUtils.mjs';
+
+const router = express.Router();
 
 const COLLECTION_NAME = 'kavitaNotifications';
+const DOCUMENT_TYPE = 'kavitaNotifiedIds';
 
-export async function getKavitaNotifiedIds(req, res) {
+/**
+ * GET /v1/notifications/kavita
+ * Returns the current list of notified IDs for Kavita.
+ */
+router.get('/', async (req, res) => {
     try {
         const db = getMongoDb();
         if (!db) {
-            console.error('MongoDB connection not available');
-            return res.status(503).json({ 
-                success: false, 
-                message: 'Database connection unavailable' 
-            });
+            printError('MongoDB connection not available');
+            return res.status(503).json({ success: false, message: 'Database connection unavailable' });
         }
-        
-        const collection = db.collection(COLLECTION_NAME);
-        const record = await collection.findOne({ type: 'kavitaNotifiedIds' });
-        
-        return res.status(200).json({ 
-            success: true, 
-            notifiedIds: record?.ids || [] 
+
+        const record = await db.collection(COLLECTION_NAME).findOne({ type: DOCUMENT_TYPE });
+        const ids = Array.isArray(record?.ids) ? record.ids : [];
+
+        return res.status(200).json({
+            success: true,
+            status: 'ok',
+            notifiedIds: ids
         });
     } catch (error) {
-        console.error('Error retrieving Kavita notified IDs:', error);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Failed to retrieve notified IDs' 
+        printError(`Failed to retrieve Kavita notified IDs: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve notified IDs'
         });
     }
-}
+});
 
-export async function saveKavitaNotifiedIds(req, res) {
+/**
+ * POST /v1/notifications/kavita
+ * Replaces the list of notified IDs for Kavita.
+ */
+router.post('/', async (req, res) => {
     try {
         const { ids } = req.body;
-        
+
         if (!Array.isArray(ids)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid format: ids must be an array'
             });
         }
-        
+
         const db = getMongoDb();
         if (!db) {
-            console.error('MongoDB connection not available');
-            return res.status(503).json({ 
-                success: false, 
-                message: 'Database connection unavailable' 
-            });
+            printError('MongoDB connection not available');
+            return res.status(503).json({ success: false, message: 'Database connection unavailable' });
         }
-        
-        const collection = db.collection(COLLECTION_NAME);
-        
-        await collection.updateOne(
-            { type: 'kavitaNotifiedIds' },
+
+        await db.collection(COLLECTION_NAME).updateOne(
+            { type: DOCUMENT_TYPE },
             { $set: { ids, updatedAt: new Date() } },
             { upsert: true }
         );
-        
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Notified IDs saved successfully' 
+
+        return res.status(200).json({
+            success: true,
+            status: 'ok',
+            message: 'Notified IDs saved successfully'
         });
     } catch (error) {
-        console.error('Error saving Kavita notified IDs:', error);
-        return res.status(500).json({ 
-            success: false, 
-            message: 'Failed to save notified IDs' 
+        printError(`Failed to save Kavita notified IDs: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to save notified IDs'
         });
     }
-} 
+});
+
+export default router;

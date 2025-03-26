@@ -1,91 +1,117 @@
-// ✅ /initmain.mjs — Clean boot + graceful shutdown
+// /initmain.mjs — Clean Boot + Debug + Warden-Compatible
 
-import chalk from 'chalk';
-import { initializeDatabases } from './database/databaseManager.mjs';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import morgan from 'morgan';
-import mountRoutes from './noona/restAPI/routemanager.mjs';
+import chalk from 'chalk';
 
-dotenv.config();
+import { initializeDatabases } from './database/databaseManager.mjs';
+import mountRoutes from './noona/restAPI/routemanager.mjs';
+import {
+    printBanner,
+    printDivider,
+    printSection,
+    printResult,
+    printError,
+    printDebug
+} from './noona/logger/logUtils.mjs';
+import { validateEnv } from './noona/logger/validateEnv.mjs';
+
+// Validate environment variables (required and optional)
+validateEnv(
+    [
+        'PORT',
+        'MONGO_URL',
+        'REDIS_URL',
+        'MARIADB_HOST',
+        'MARIADB_USER',
+        'MARIADB_PASSWORD',
+        'MARIADB_DATABASE'
+    ],
+    [
+        'NODE_ENV'
+    ]
+);
 
 const app = express();
 const PORT = process.env.PORT || 3120;
-let server = null; // <--- Store the server reference
+let server = null;
 
-console.log('');
-console.log(chalk.bold.greenBright('[Noona-Vault] Booting up Vault System...'));
+printBanner('Noona Vault');
+printDivider();
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error(chalk.red('[Noona-Vault] ⚠️ Unhandled Promise Rejection:'));
-    console.error(chalk.gray(`Reason: ${reason?.message || reason}`));
+// Catch unhandled rejections
+process.on('unhandledRejection', (reason) => {
+    printError('⚠️ Unhandled Promise Rejection:');
+    console.error(reason);
 });
 
-/**
- * Main async startup block.
- * Initializes databases, mounts routes, and starts HTTP server.
- */
+// Main boot logic
 (async () => {
     try {
-        // Step 1: Initialize all databases
-        await initializeDatabases();
-        console.log(chalk.gray('----------------------------------------'));
-        console.log('');
+        const isDev = process.env.NODE_ENV?.toLowerCase() === 'development';
 
-        // Step 2: Setup Express middleware
+        if (isDev) {
+            printSection('🔍 Debug Mode Active');
+            printDebug(`PORT = ${PORT}`);
+            printDebug(`NODE_ENV = ${process.env.NODE_ENV}`);
+            printDebug(`MONGO_URL = ${process.env.MONGO_URL}`);
+            printDebug(`REDIS_URL = ${process.env.REDIS_URL}`);
+            printDebug(`MARIADB_HOST = ${process.env.MARIADB_HOST}`);
+            printDebug(`MARIADB_DATABASE = ${process.env.MARIADB_DATABASE}`);
+            printDivider();
+        }
+
+        printSection('📦 Initializing Databases');
+        await initializeDatabases();
+        printResult('✅ All database clients connected');
+
+        printSection('🧩 Setting Up Middleware');
         app.use(cors());
         app.use(express.json());
         app.use(express.urlencoded({ extended: true }));
         app.use(morgan('dev'));
+        printResult('✅ Express middleware ready');
 
-        // Step 3: Mount routes after databases are ready
-        console.log(chalk.bold.cyan('[RouteManager] 🔁 Scanning and registering versioned REST routes...'));
+        printSection('🔁 Mounting REST API Routes');
         mountRoutes(app);
-        console.log(chalk.gray('----------------------------------------'));
-        console.log('');
+        printResult('✅ Routes mounted');
 
-        // Step 4: Start the HTTP server
+        printSection('🚀 Starting API Server');
         server = app.listen(PORT, () => {
-            console.log(chalk.green('[REST API] ✅ Online and authenticated.'));
-            console.log(chalk.cyan(`[REST API] Listening on port ${PORT}`));
-            console.log('');
-            console.log(chalk.bold.cyan('[Noona-Vault] 🟢 Vault is ready and awaiting secure orders.'));
-            console.log('');
+            printResult(`✅ Vault API listening on port ${PORT}`);
+            printDivider();
+            console.log(chalk.bold.cyan('[Noona-Vault] Vault is ready and awaiting secure orders.'));
+            printDivider();
         });
     } catch (err) {
-        console.error(chalk.red('[Noona-Vault] ❌ Error during initialization:'), err);
+        printError('❌ Error during initialization:');
+        console.error(err);
         process.exit(1);
     }
 })();
 
-/**
- * Handles graceful shutdown when Docker or system sends SIGTERM/SIGINT.
- * Closes DB connections and HTTP server before exiting.
- *
- * @param {'SIGTERM' | 'SIGINT'} signal
- */
+// Graceful shutdown handler
 function handleShutdown(signal) {
-    console.log('');
-    console.log(chalk.yellow(`\n[Shutdown] ${signal} received. Closing Noona-Vault cleanly...`));
+    printDivider();
+    printSection(`💤 ${signal} received — Shutting down Noona-Vault`);
 
     const closeTasks = [
         global.noonaMongoClient?.close?.(),
         global.noonaRedisClient?.quit?.(),
-        global.noonaMariaConnection?.end?.(),
-        global.noonaMilvusClient?.close?.(),
+        global.noonaMariaConnection?.end?.()
     ];
 
-    // Add HTTP server shutdown if running
-    if (server && server.close) {
+    if (server?.close) {
         closeTasks.push(new Promise(resolve => server.close(resolve)));
     }
 
     Promise.allSettled(closeTasks).then(() => {
-        console.log(chalk.green('[Shutdown] ✅ All services and connections closed. Vault secure.'));
+        printResult('✅ All services and connections closed. Vault secure.');
         process.exit(0);
     }).catch(err => {
-        console.error(chalk.red('[Shutdown] ❌ Error during shutdown:'), err);
+        printError('❌ Error during shutdown:');
+        console.error(err);
         process.exit(1);
     });
 }

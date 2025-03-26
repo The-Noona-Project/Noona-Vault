@@ -1,54 +1,58 @@
+// /noona/restAPI/routemanager.mjs
 
-import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
+import { printResult, printError, printDebug, printSection, printDivider } from '../logger/logUtils.mjs';
 
 /**
- * Dynamically mounts all versioned REST routes found under `/v1/` and beyond.
- * Logs registered route files to the console.
+ * Dynamically mounts all versioned REST routes found under `/noona/restAPI/v1`
+ * and logs registered route files to the console.
+ *
+ * Each .mjs file is mounted at a path corresponding to its folder structure and file name.
+ * For example, a file "crud/routes.mjs" will be mounted at "/crud/routes".
  *
  * @param {import('express').Application} app - The Express application instance.
  */
 export default function mountRoutes(app) {
-    const baseDir = path.join(process.cwd(), 'noona', 'restAPI');
+    // Set base directory to the "v1" folder
+    const baseDir = path.join(process.cwd(), 'noona', 'restAPI', 'v1');
 
-    console.log('');
-    console.log(chalk.bold.cyan(`[RouteManager] 🔁 Scanning and registering versioned REST routes...`));
+    printSection('🔁 Mounting V1 REST Routes');
 
-    function walkAndMount(dirPath) {
+    /**
+     * Recursively walks through the directory and mounts .mjs route files.
+     *
+     * @param {string} dirPath - The current directory path.
+     * @param {string} routePrefix - The accumulated route prefix.
+     */
+    function walkAndMount(dirPath, routePrefix = '') {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-
-        for (const entry of entries) {
+        entries.forEach(entry => {
             const fullPath = path.join(dirPath, entry.name);
-
             if (entry.isDirectory()) {
-                walkAndMount(fullPath);
-            } else if (
-                entry.isFile() &&
-                entry.name.endsWith('.mjs') &&
-                entry.name !== 'mongoHandler.mjs' && // ✅ Skip helper files
-                entry.name !== 'validateAndRoute.mjs'
-            ) {
-                const routePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
-                const routePrefix = '/' + routePath.split('/')[0];
-
+                walkAndMount(fullPath, routePrefix + '/' + entry.name);
+            } else if (entry.isFile() && entry.name.endsWith('.mjs')) {
+                // Import the route module dynamically.
                 import(fullPath)
-                    .then((routeModule) => {
+                    .then(routeModule => {
                         if (typeof routeModule.default === 'function') {
-                            routeModule.default(app, global.noonaMongoClient);
-                            console.log(chalk.greenBright(`✅ Mounted: ${routePath}`));
+                            // Determine route path by removing the ".mjs" extension.
+                            const routePath = routePrefix + '/' + entry.name.replace(/\.mjs$/, '');
+                            // Mount the route on the Express app.
+                            app.use(routePath, routeModule.default);
+                            printResult(`✅ Mounted route: ${routePath}`);
                         } else {
-                            console.warn(chalk.yellow(`⚠️ Skipped (no default export): ${routePath}`));
+                            printError(`No default export in ${fullPath}; skipping.`);
                         }
                     })
-                    .catch((err) => {
-                        console.error(chalk.red(`❌ Failed to load: ${routePath}`));
-                        console.error(err);
+                    .catch(err => {
+                        printError(`❌ Failed to load route file: ${fullPath}`);
+                        printDebug(err.message);
                     });
             }
-        }
+        });
     }
 
-    walkAndMount(path.join(baseDir, 'v1'));
-    console.log('');
+    walkAndMount(baseDir, '');
+    printDivider();
 }

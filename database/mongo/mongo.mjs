@@ -1,48 +1,63 @@
-// ✅ Updated /database/mongo/mongo.mjs
-import chalk from 'chalk';
+// ✅ /database/mongo/mongo.mjs
+
 import mongoose from 'mongoose';
+import {
+    printSection,
+    printResult,
+    printError,
+    printDebug
+} from '../../noona/logger/logUtils.mjs';
 
 let mongoDb = null;
+const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Initializes MongoDB via Mongoose.
- * @returns {Promise<{success: boolean, message: string, url: string}>}
+ * Initializes MongoDB using Mongoose with optional admin authentication.
+ *
+ * @returns {Promise<{ client: typeof mongoose, db: object } | false>}
  */
 export default async function initMongo() {
-    const mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017/noona';
+    let mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017/noona';
 
-    console.log(chalk.gray('----------------------------------------'));
-    console.log(chalk.cyan('[Init] Starting MongoDB...'));
-    console.log(chalk.cyan(`[MongoDB] Attempting to connect to ${mongoURL}...`));
+    // Append authSource=admin if not already present
+    if (!mongoURL.includes('authSource=')) {
+        const separator = mongoURL.includes('?') ? '&' : '?';
+        mongoURL += `${separator}authSource=admin`;
+    }
+
+    printSection('MongoDB');
+    if (isDev) printDebug(`MongoDB URL → ${mongoURL}`);
 
     try {
         const client = await mongoose.connect(mongoURL, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 10000,
+            maxPoolSize: 10
         });
 
-        mongoose.connection.on('error', (err) =>
-            console.error(chalk.red('[MongoDB] Connection error:'), err.message)
-        );
+        // Connection listeners
+        mongoose.connection.on('error', (err) => {
+            printError(`[MongoDB] Connection error: ${err.message}`);
+        });
 
-        mongoose.connection.on('disconnected', () =>
-            console.warn(chalk.yellow('[MongoDB] Disconnected from database.'))
-        );
+        mongoose.connection.on('disconnected', () => {
+            printError('[MongoDB] Disconnected.');
+        });
 
         mongoDb = mongoose.connection.db;
-        global.noonaMongo = mongoDb;
-
-        console.log(chalk.green(`[MongoDB] Connected successfully to: ${mongoURL}`));
-        console.log(chalk.green('[Init] ✅ MongoDB initialized successfully.'));
+        printResult(`✅ Connected to MongoDB at ${mongoURL}`);
         return { client, db: mongoDb };
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        return null;
-    } finally {
-        console.log(chalk.gray('----------------------------------------'));
+    } catch (err) {
+        printError('❌ Failed to connect to MongoDB.');
+        printDebug(`Authentication failed. Reason → ${err.message}`);
+        return false;
     }
 }
 
+/**
+ * Access the connected MongoDB instance directly.
+ * @returns {object|null}
+ */
 export function getMongoDb() {
     return mongoDb;
 }
