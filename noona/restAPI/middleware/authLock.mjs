@@ -1,86 +1,120 @@
-// ✅ /noona/restAPI/middleware/authLock.mjs
+// /initmain.mjs — Clean Boot + Debug + Warden-Compatible
 
-import jwt from 'jsonwebtoken';
-import { printDebug, printError } from '../../logger/logUtils.mjs';
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import chalk from 'chalk';
 
-/**
- * Central route lock map.
- * Keys are base route paths mounted via Express.
- * Values: "private" = requires valid JWT signed with private key (RS256).
- */
-const routeConfig = {
-    // 📦 CRUD Routes
-    "/v1/crud/mongo": "private",         // POST: /v1/crud/mongo/:collection/:action
-    "/v1/crud/mariadb": "private",       // POST: /v1/crud/mariadb/:table/:action
-    "/v1/notifications/kavita": "private", // GET/POST: /v1/notifications/kavita
-    "/v1/system/health": "public",
-    "/v1/system/db-status": "public"
-};
+import { initializeDatabases } from './database/databaseManager.mjs';
+import mountRoutes from './noona/restAPI/routemanager.mjs';
+import {
+    printBanner,
+    printDivider,
+    printSection,
+    printResult,
+    printError,
+    printDebug
+} from './noona/logger/logUtils.mjs';
+import { validateEnv } from './noona/logger/validateEnv.mjs';
 
-/**
- * Retrieves the public JWT key from Redis.
- * Warden stores the key under "NOONA_PUBLIC_KEY".
- */
-async function getPublicKey() {
-    const { getFromRedis } = await import('../../../database/redis/getFromRedis.mjs');
-    const client = global.noonaRedisClient?.client;
+// Validate required and optional environment variables
+validateEnv(
+    [
+        'VAULT_PORT',
+        'MONGO_URL',
+        'REDIS_URL',
+        'MARIADB_HOST',
+        'MARIADB_USER',
+        'MARIADB_PASSWORD',
+        'MARIADB_DATABASE'
+    ],
+    ['NODE_ENV']
+);
 
-    if (!client) {
-        throw new Error('Redis client not available');
-    }
+const app = express();
+const PORT = process.env.PORT || 3120;
+let server = null;
 
-    const publicKey = await getFromRedis(client, 'NOONA_PUBLIC_KEY');
+printBanner('Noona Vault');
+printDivider();
 
-    if (!publicKey) {
-        throw new Error('Public key not found in Redis (key: NOONA_PUBLIC_KEY)');
-    }
+// Catch unhandled promise rejections
+process.on('unhandledRejection', (reason) => {
+    printError('⚠️ Unhandled Promise Rejection:');
+    console.error(reason);
+});
 
-    printDebug(`✅ Public key retrieved from Redis`);
-    return publicKey;
-}
-
-/**
- * Middleware: authLock
- * Locks sensitive API routes behind JWT verification (RS256).
- */
-export async function authLock(req, res, next) {
-    const path = req.originalUrl || req.path;
-    let needsAuth = false;
-
-    // Determine if the requested route is protected
-    for (const [lockedPath, level] of Object.entries(routeConfig)) {
-        if (path === lockedPath || path.startsWith(lockedPath)) {
-            if (level === 'private') {
-                needsAuth = true;
-                break;
-            }
-        }
-    }
-
-    // Route is public
-    if (!needsAuth) return next();
-
-    const authHeader = req.headers['authorization'];
-    const token = authHeader?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({
-            success: false,
-            message: 'Authorization token missing'
-        });
-    }
-
+// Main boot logic
+(async () => {
     try {
-        const publicKey = await getPublicKey();
-        const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
-        req.user = decoded;
-        printDebug(`🔐 Token verified — user: ${decoded.sub || 'anonymous'}`);
-        return next();
-    } catch (err) {
-        printError(`🔒 AuthLock failed: ${err.message}`);
-        return res.status(403).json({
-            success: false,
-            message: 'Invalid or expired token'
+        const isDev = process.env.NODE_ENV?.toLowerCase() === 'development';
+        if (isDev) {
+            printSection('🔍 Debug Mode Active');
+            printDebug(`PORT: ${PORT}`);
+            printDebug(`NODE_ENV: ${process.env.NODE_ENV}`);
+            printDebug(`MONGO_URL: ${process.env.MONGO_URL}`);
+            printDebug(`REDIS_URL: ${process.env.REDIS_URL}`);
+            printDebug(`MARIADB_HOST: ${process.env.MARIADB_HOST}`);
+            printDebug(`MARIADB_DATABASE: ${process.env.MARIADB_DATABASE}`);
+            printDivider();
+        }
+
+        printSection('📦 Initializing Databases');
+        await initializeDatabases();
+        printResult('✅ All database clients connected');
+
+        printSection('🧩 Setting Up Middleware');
+        app.use(cors());
+        app.use(express.json());
+        app.use(express.urlencoded({ extended: true }));
+        app.use(morgan('dev'));
+        printResult('✅ Express middleware ready');
+
+        printSection('🔁 Mounting REST API Routes');
+        mountRoutes(app);
+        printResult('✅ Routes mounted');
+
+        printSection('🚀 Starting API Server');
+        server = app.listen(PORT, () => {
+            printResult(`✅ Vault API listening on port ${PORT}`);
+            printDivider();
+            console.log(chalk.bold.cyan('[Noona-Vault] Vault is ready and awaiting secure orders.'));
+            printDivider();
         });
+    } catch (err) {
+        printError('❌ Error during initialization:');
+        console.error(err);
+        process.exit(1);
     }
+})();
+
+// Graceful shutdown handler
+function handleShutdown(signal) {
+    printDivider();
+    printSection(`💤 ${signal} received — Shutting down Noona-Vault`);
+
+    const closeTasks = [
+        global.noonaMongoClient?.close?.(),
+        global.noonaRedisClient?.quit?.(),
+        global.noonaMariaConnection?.end?.()
+    ];
+
+    if (server?.close) {
+        closeTasks.push(new Promise(resolve => server.close(resolve)));
+    }
+
+    Promise.allSettled(closeTasks)
+        .then(() => {
+            printResult('✅ All services and connections closed. Vault secure.');
+            process.exit(0);
+        })
+        .catch(err => {
+            printError('❌ Error during shutdown:');
+            console.error(err);
+            process.exit(1);
+        });
 }
+
+// Bind shutdown signals
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));

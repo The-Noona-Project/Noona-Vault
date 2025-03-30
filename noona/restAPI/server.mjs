@@ -3,12 +3,12 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import { printResult, printSection } from '../logger/logUtils.mjs';
+import { printResult } from '../logger/logUtils.mjs';
 import mountRoutes from './routemanager.mjs';
 import { authLock } from './middleware/authLock.mjs';
 
 const app = express();
-const PORT = process.env.PORT || 3120;
+const PORT = process.env.PORT || process.env.VAULT_PORT || 3120;
 
 // Global middleware stack
 app.use(cors());

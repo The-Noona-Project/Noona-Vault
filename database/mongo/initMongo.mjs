@@ -1,12 +1,7 @@
-// ✅ /database/mongo/mongo.mjs
+// /database/mongo/initMongo.mjs
 
 import mongoose from 'mongoose';
-import {
-    printSection,
-    printResult,
-    printError,
-    printDebug
-} from '../../noona/logger/logUtils.mjs';
+import { printSection, printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
 
 let mongoDb = null;
 const isDev = process.env.NODE_ENV === 'development';
@@ -56,7 +51,8 @@ export default async function initMongo() {
 
 /**
  * Access the connected MongoDB instance directly.
- * @returns {object|null}
+ *
+ * @returns {object|null} The connected MongoDB database instance.
  */
 export function getMongoDb() {
     return mongoDb;
