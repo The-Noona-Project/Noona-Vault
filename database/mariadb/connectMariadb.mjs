@@ -1,26 +1,35 @@
-// /database/mariadb/getFromMariadb.mjs
+// /database/mariadb/connectMariadb.mjs
 
-import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
+import mysql from 'mysql2/promise';
+import { printSection, printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
 
-/**
- * Executes a SELECT query against MariaDB.
- *
- * @param {import('mysql2/promise').Connection} connection - MariaDB connection instance.
- * @param {string} query - The SQL query string.
- * @param {Array} [values=[]] - Values for the parameterized query.
- * @returns {Promise<Array|null>} - The resulting rows, or null if an error occurs.
- */
-export async function getFromMariadb(connection, query, values = []) {
-    if (!connection) {
-        printError('[MariaDB] Connection not available');
-        return null;
-    }
+export default async function connectMariadb() {
+    const host = process.env.MARIADB_HOST || 'localhost';
+    const port = Number(process.env.MARIADB_PORT || 3306);
+    const user = process.env.MARIADB_USER || 'root';
+    const password = process.env.MARIADB_PASSWORD || '';
+    const database = process.env.MARIADB_DATABASE || 'noona';
+
+    printSection('MariaDB');
+    printDebug(`Host: ${host}`);
+    printDebug(`Port: ${port}`);
+    printDebug(`User: ${user}`);
+    printDebug(`Database: ${database}`);
+
     try {
-        const [rows] = await connection.execute(query, values);
-        printDebug(`[MariaDB] Fetched ${rows.length} rows`);
-        return rows;
-    } catch (err) {
-        printError(`[MariaDB] Query failed: ${err.message}`);
+        const connection = await mysql.createConnection({
+            host,
+            port,
+            user,
+            password,
+            database
+        });
+        await connection.ping();
+        printResult(`✅ Connected to ${host}:${port} [${database}]`);
+        return connection;
+    } catch (error) {
+        printError('❌ MariaDB connection failed.');
+        printDebug(error.message);
         return null;
     }
 }
