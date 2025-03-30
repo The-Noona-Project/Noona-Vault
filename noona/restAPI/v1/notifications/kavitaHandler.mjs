@@ -1,7 +1,7 @@
-// ✅ /noona/restAPI/v1/notifications/kavitaHandler.mjs
+// /noona/restAPI/v1/notifications/kavitaHandler.mjs
 
 import express from 'express';
-import { getMongoDb } from '../../../../database/mongo/mongo.mjs';
+import { getMongoDb } from '../../../../database/mongo/initMongo.mjs';
 import { printError, printDebug } from '../../../logger/logUtils.mjs';
 
 const router = express.Router();

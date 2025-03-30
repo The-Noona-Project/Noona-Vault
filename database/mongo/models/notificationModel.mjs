@@ -1,6 +1,6 @@
 // /database/mongo/models/notificationModel.mjs
 
-import { getMongoDb } from '../mongo.mjs';
+import { getMongoDb } from '../initMongo.mjs';
 import { printError } from '../../../noona/logger/logUtils.mjs';
 
 /**
