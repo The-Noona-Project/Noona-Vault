@@ -8,7 +8,7 @@ export default function mountRoutes(app) {
     const baseDir = path.join(process.cwd(), 'noona', 'restAPI', 'v1');
     printSection('🔁 Mounting V1 REST Routes');
 
-    function walkAndMount(dirPath, routePrefix = '') {
+    async function walkAndMount(dirPath, routePrefix = '') {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
         for (const entry of entries) {
