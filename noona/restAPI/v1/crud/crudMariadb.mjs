@@ -55,7 +55,13 @@ router.post('/:table/:action', async (req, res) => {
 
     try {
         let result;
-        switch (action.toLowerCase()) {
+        // Example approach: Validate table name
+        const allowedTables = ['users', 'orders', '...', 'someSafeTable'];
+        if (!allowedTables.includes(table)) {
+            return res.status(400).json({ success: false, msg: 'Invalid table name' });
+        }
+
+        switch (action?.toLowerCase?.()) {
             case 'create': {
                 if (!data || typeof data !== 'object') {
                     return res.status(400).json({ success: false, msg: 'Missing or invalid "data" for create' });
