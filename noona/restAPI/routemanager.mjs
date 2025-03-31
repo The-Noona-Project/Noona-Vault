@@ -7,10 +7,11 @@ import { printResult, printError, printDebug, printSection, printDivider } from 
 /**
  * Mounts version 1 REST API routes onto the provided Express application.
  *
- * The function recursively traverses the 'noona/restAPI/v1' directory, dynamically imports
- * route modules, and mounts them to the app instance. Routes marked with a `routeMeta.auth`
- * value of "public" are added without middleware, while all other routes are secured with the
- * authentication lock middleware.
+ * Recursively traverses the 'noona/restAPI/v1' directory, dynamically imports REST API route modules,
+ * and mounts each route to the app with a '/v1' prefix. The route path is built from '/v1', any subdirectory
+ * names, and the file name (without the '.mjs' extension). Routes whose metadata property `authLevel` is set
+ * to "public" are mounted without authentication middleware, whereas all others are secured using the authLock middleware.
+ * Modules that lack a default export (i.e., a valid router function) are skipped with an error log.
  *
  * @example
  * mountRoutes(app);
@@ -19,6 +20,19 @@ export default function mountRoutes(app) {
     const baseDir = path.join(process.cwd(), 'noona', 'restAPI', 'v1');
     printSection('🔁 Mounting V1 REST Routes');
 
+    /**
+     * Recursively traverses the specified directory to dynamically import and mount route modules onto the Express app.
+     *
+     * This function reads the contents of a directory, recursively processing subdirectories and loading files ending with ".mjs" as route modules.
+     * It constructs each route path by prefixing "/v1" to the accumulated route prefix and the file name (sans extension).
+     * Depending on the module's metadata (using "routeMeta.authLevel"), it mounts the route as either public (without authentication middleware) or private (with "authLock").
+     * Files that do not export a default function are skipped with an error log, and any issues during dynamic import are caught and logged.
+     *
+     * @param {string} dirPath - The directory path to scan for route modules.
+     * @param {string} [routePrefix=''] - A base prefix used to construct route paths reflecting the directory structure.
+     *
+     * @async
+     */
     async function walkAndMount(dirPath, routePrefix = '') {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
