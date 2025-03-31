@@ -1,4 +1,4 @@
-// /initmain.mjs — Clean Boot + Debug + Warden-Compatible
++// /noona/restAPI/middleware/authLock.mjs
 
 import express from 'express';
 import cors from 'cors';
