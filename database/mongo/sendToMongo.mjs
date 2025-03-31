@@ -4,11 +4,15 @@ import { getMongoDb } from './initMongo.mjs';
 import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Retrieves documents from the specified MongoDB collection using the provided filter.
+ * Retrieves documents from a MongoDB collection that match the provided filter.
  *
- * @param {string} collectionName - The name of the collection to query.
- * @param {object} [filter={}] - Query filter criteria.
- * @returns {Promise<Array|null>} - An array of documents if successful; otherwise, null.
+ * This asynchronous function obtains a database connection and attempts to query
+ * the specified collection using the given filter criteria. If the database connection
+ * is unavailable or an error occurs during the query, the function logs an error and returns null.
+ *
+ * @param {string} collectionName - The name of the MongoDB collection to query.
+ * @param {object} [filter={}] - Optional filter criteria for selecting documents.
+ * @returns {Promise<Array|null>} A promise that resolves to an array of documents if successful; otherwise, null.
  */
 export async function getFromMongo(collectionName, filter = {}) {
     const db = getMongoDb();

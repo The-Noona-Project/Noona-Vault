@@ -10,8 +10,15 @@ import { printSection, printDebug, printResult } from '../noona/logger/logUtils.
 const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Initializes all core databases used by Noona-Vault
- * and assigns global connections.
+ * Asynchronously initializes connections to MongoDB, Redis, and MariaDB for Noona-Vault.
+ *
+ * The function attempts to establish connections with each core database, logging connection
+ * attempts and outputting debug information (such as connection URLs or host details) when
+ * running in development mode. On a successful connection, the respective client or connection
+ * object is assigned to a global variable (global.noonaMongoClient, global.noonaRedisClient, and
+ * global.noonaMariaConnection). Finally, a summary of all connection statuses is printed.
+ *
+ * @async
  */
 export async function initializeDatabases() {
     const results = [];
