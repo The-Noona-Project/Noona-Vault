@@ -11,7 +11,13 @@ export default function mountRoutes(app) {
     function walkAndMount(dirPath, routePrefix = '') {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-        entries.forEach(async (entry) => {
+        for (const entry of entries) {
+          try {
+              // Place your async logic here.
+          } catch (err) {
+              // ...
+          }
+        }
             const fullPath = path.join(dirPath, entry.name);
             if (entry.isDirectory()) {
                 walkAndMount(fullPath, routePrefix + '/' + entry.name);
