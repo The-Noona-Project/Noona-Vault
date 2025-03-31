@@ -5,8 +5,13 @@ import { getFromRedis } from '../../../database/redis/getFromRedis.mjs';
 import { printDebug, printError } from '../../logger/logUtils.mjs';
 
 /**
- * Mounts publicly accessible routes before auth middleware applies.
- * These bypass JWT validation.
+ * Configures and mounts system-related public routes on the provided Express application.
+ *
+ * This function registers several GET endpoints that are accessible without JWT validation:
+ * - `/v1/system/health`: Returns basic health information about the service.
+ * - `/v1/system/version`: Provides the current service version, defaulting to '0.0.0-dev' if unspecified.
+ * - `/v1/system/db-status`: Returns the status of MongoDB, Redis, and MariaDB connections.
+ * - `/v1/system/token`: A passthrough route that bypasses authentication.
  */
 export function mountPublicRoutes(app) {
     app.get('/v1/system/health', (req, res) => {
@@ -44,7 +49,18 @@ export function mountPublicRoutes(app) {
 }
 
 /**
- * Middleware: Validates JWT on protected routes.
+ * Validates a JSON Web Token (JWT) on protected routes.
+ *
+ * This middleware bypasses authentication for public endpoints:
+ * "/v1/system/health", "/v1/system/version", "/v1/system/db-status", and "/v1/system/token".
+ * For all other routes, it extracts the JWT from the 'Authorization' header following the
+ * Bearer scheme, retrieves the public key from Redis, and verifies the token using the RS256 algorithm.
+ * On successful verification, the decoded token is attached to req.user.
+ * If the token is missing, invalid, or expired, the middleware sends an appropriate HTTP error response.
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Callback to pass control to the next middleware.
  */
 export async function authLock(req, res, next) {
     const path = req.originalUrl || req.path;
