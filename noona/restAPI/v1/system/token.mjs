@@ -13,7 +13,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     printDebug('[System] 🔑 Received request for public JWT key');
 
-    const client = global.noonaRedisClient?.client;
+    const client = global.noonaRedisClient;
     if (!client) {
         printError('[System] ❌ Redis unavailable during token fetch');
         return res.status(503).json({

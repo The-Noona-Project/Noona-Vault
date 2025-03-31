@@ -22,23 +22,25 @@ export default function mountRoutes(app) {
     async function walkAndMount(dirPath, routePrefix = '') {
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-        entries.forEach(async (entry) => {
+        for (const entry of entries) {
             const fullPath = path.join(dirPath, entry.name);
             if (entry.isDirectory()) {
-                walkAndMount(fullPath, routePrefix + '/' + entry.name);
+                await walkAndMount(fullPath, routePrefix + '/' + entry.name);
             } else if (entry.isFile() && entry.name.endsWith('.mjs')) {
                 try {
                     const routeModule = await import(fullPath);
                     const router = routeModule.default;
-                    const routePath = routePrefix + '/' + entry.name.replace(/\.mjs$/, '');
+                    const routePath = '/v1' + routePrefix + '/' + entry.name.replace(/\.mjs$/, '');
                     const meta = routeModule.routeMeta || {};
 
                     if (typeof router !== 'function') {
                         printError(`❌ No default export in ${entry.name}; skipping`);
-                        return;
+                        continue;
                     }
 
-                    if (meta.auth === 'public') {
+                    const authLevel = meta.authLevel || 'private';
+
+                    if (authLevel === 'public') {
                         app.use(routePath, router);
                         printResult(`🌐 Public Route: ${routePath}`);
                     } else {
@@ -50,7 +52,7 @@ export default function mountRoutes(app) {
                     printDebug(err.message);
                 }
             }
-        });
+        }
     }
 
     walkAndMount(baseDir, '');

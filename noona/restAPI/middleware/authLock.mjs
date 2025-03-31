@@ -84,7 +84,7 @@ export async function authLock(req, res, next) {
     }
 
     try {
-        const client = global.noonaRedisClient?.client;
+        const client = global.noonaRedisClient;
         if (!client) throw new Error('Redis client not initialized');
 
         const publicKey = await getFromRedis(client, 'NOONA:JWT:PUBLIC_KEY');
