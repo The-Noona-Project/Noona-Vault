@@ -26,3 +26,6 @@ export async function getFromMongo(collectionName, filter = {}) {
         return null;
     }
 }
+
+// Re-export getMongoDb so that route files can import it as expected.
+export { getMongoDb } from './initMongo.mjs';
