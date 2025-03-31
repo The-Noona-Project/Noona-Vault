@@ -88,7 +88,15 @@ process.on('unhandledRejection', (reason) => {
     }
 })();
 
-// Graceful shutdown handler
+/**
+ * Initiates a graceful shutdown of Noona-Vault by closing active service connections and the server.
+ *
+ * Logs receipt of the specified shutdown signal, then concurrently attempts to close the MongoDB,
+ * Redis, and MariaDB connections, as well as the HTTP server if it is running. Once all shutdown
+ * tasks settle, it exits the process with a status code of 0 on success or 1 if any errors occur.
+ *
+ * @param {string} signal - The termination signal received (e.g., 'SIGTERM' or 'SIGINT').
+ */
 function handleShutdown(signal) {
     printDivider();
     printSection(`💤 ${signal} received — Shutting down Noona-Vault`);

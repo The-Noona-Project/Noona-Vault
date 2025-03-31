@@ -3,6 +3,15 @@
 import mysql from 'mysql2/promise';
 import { printSection, printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
 
+/**
+ * Establishes an asynchronous connection to a MariaDB database.
+ *
+ * This function retrieves connection parameters (host, port, user, password, and database) from environment variables,
+ * using default values when not provided. It logs the connection details, attempts to create a connection, and verifies it by pinging the database.
+ * On success, it returns the MariaDB connection object; if the connection fails, it logs the error and returns null.
+ *
+ * @returns {Promise<object|null>} A promise that resolves with the MariaDB connection object if successful, or null if the connection fails.
+ */
 export default async function connectMariadb() {
     const host = process.env.MARIADB_HOST || 'localhost';
     const port = Number(process.env.MARIADB_PORT || 3306);

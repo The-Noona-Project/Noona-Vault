@@ -3,12 +3,15 @@
 import { printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Executes an INSERT, UPDATE, or DELETE query against MariaDB.
+ * Executes a parameterized INSERT, UPDATE, or DELETE SQL query against a MariaDB database.
  *
- * @param {import('mysql2/promise').Connection} connection - MariaDB connection instance.
- * @param {string} query - The SQL query string.
- * @param {Array} [values=[]] - Values for the parameterized query.
- * @returns {Promise<object|false>} - The result object if successful; otherwise, false.
+ * This asynchronous function uses the provided connection to run the given SQL statement. It returns
+ * the query result object upon success. If the connection is missing or an error occurs during execution,
+ * the function logs the error details and returns false.
+ *
+ * @param {string} query - The SQL statement to execute.
+ * @param {Array} [values=[]] - Optional list of values for parameterizing the query.
+ * @returns {Promise<object|false>} A promise that resolves with the query result if successful, or false if execution fails.
  */
 export async function sendToMariadb(connection, query, values = []) {
     if (!connection) {

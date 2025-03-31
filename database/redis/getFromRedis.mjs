@@ -3,11 +3,13 @@
 import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Safely fetches a value from Redis.
+ * Retrieves the value for a specified Redis key asynchronously.
  *
- * @param {import('redis').RedisClientType} client - Redis client instance.
- * @param {string} key - Redis key to retrieve.
- * @returns {Promise<string|null>} - The retrieved value or null if not found/error.
+ * Returns the value if present; otherwise, logs an error or debug message and returns null. This occurs when
+ * the Redis client is invalid/disconnected, the key is not found, or an error happens during retrieval.
+ *
+ * @param {string} key - The Redis key to retrieve.
+ * @returns {Promise<string|null>} A promise that resolves to the retrieved value or null.
  */
 export async function getFromRedis(client, key) {
     if (!client || typeof client.get !== 'function') {
