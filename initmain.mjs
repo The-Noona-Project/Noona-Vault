@@ -1,5 +1,4 @@
-// /initmain.mjs — Clean Boot + Debug + Warden-Compatible
-
+// initmain.mjs — Clean Boot + Debug + Warden-Compatible
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -17,7 +16,7 @@ import {
 } from './noona/logger/logUtils.mjs';
 import { validateEnv } from './noona/logger/validateEnv.mjs';
 
-// Validate environment variables (required and optional)
+// Validate environment variables
 validateEnv(
     [
         'PORT',
@@ -28,9 +27,7 @@ validateEnv(
         'MARIADB_PASSWORD',
         'MARIADB_DATABASE'
     ],
-    [
-        'NODE_ENV'
-    ]
+    ['NODE_ENV']
 );
 
 const app = express();
@@ -50,7 +47,6 @@ process.on('unhandledRejection', (reason) => {
 (async () => {
     try {
         const isDev = process.env.NODE_ENV?.toLowerCase() === 'development';
-
         if (isDev) {
             printSection('🔍 Debug Mode Active');
             printDebug(`PORT = ${PORT}`);
@@ -95,27 +91,25 @@ process.on('unhandledRejection', (reason) => {
 function handleShutdown(signal) {
     printDivider();
     printSection(`💤 ${signal} received — Shutting down Noona-Vault`);
-
     const closeTasks = [
         global.noonaMongoClient?.close?.(),
         global.noonaRedisClient?.quit?.(),
         global.noonaMariaConnection?.end?.()
     ];
-
     if (server?.close) {
         closeTasks.push(new Promise(resolve => server.close(resolve)));
     }
-
-    Promise.allSettled(closeTasks).then(() => {
-        printResult('✅ All services and connections closed. Vault secure.');
-        process.exit(0);
-    }).catch(err => {
-        printError('❌ Error during shutdown:');
-        console.error(err);
-        process.exit(1);
-    });
+    Promise.allSettled(closeTasks)
+        .then(() => {
+            printResult('✅ All services and connections closed. Vault secure.');
+            process.exit(0);
+        })
+        .catch(err => {
+            printError('❌ Error during shutdown:');
+            console.error(err);
+            process.exit(1);
+        });
 }
 
-// Bind shutdown signals
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 process.on('SIGINT', () => handleShutdown('SIGINT'));

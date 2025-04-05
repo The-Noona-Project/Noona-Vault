@@ -4,14 +4,14 @@ import mysql from 'mysql2/promise';
 import { printSection, printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Establishes an asynchronous connection to a MariaDB database.
- *
- * This function retrieves connection parameters (host, port, user, password, and database) from environment variables,
- * using default values when not provided. It logs the connection details, attempts to create a connection, and verifies it by pinging the database.
- * On success, it returns the MariaDB connection object; if the connection fails, it logs the error and returns null.
- *
- * @returns {Promise<object|null>} A promise that resolves with the MariaDB connection object if successful, or null if the connection fails.
+ * Delays execution for the given number of milliseconds.
+ * @param {number} ms - Milliseconds to delay.
+ * @returns {Promise<void>}
  */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export default async function connectMariadb() {
     const host = process.env.MARIADB_HOST || 'localhost';
     const port = Number(process.env.MARIADB_PORT || 3306);
@@ -25,20 +25,33 @@ export default async function connectMariadb() {
     printDebug(`User: ${user}`);
     printDebug(`Database: ${database}`);
 
-    try {
-        const connection = await mysql.createConnection({
-            host,
-            port,
-            user,
-            password,
-            database
-        });
-        await connection.ping();
-        printResult(`✅ Connected to ${host}:${port} [${database}]`);
-        return connection;
-    } catch (error) {
-        printError('❌ MariaDB connection failed.');
-        printDebug(error.message);
-        return null;
+    const maxRetries = 5;
+    let attempt = 0;
+    let connection = null;
+
+    while (attempt < maxRetries) {
+        try {
+            connection = await mysql.createConnection({
+                host,
+                port,
+                user,
+                password,
+                database
+            });
+            await connection.ping();
+            printResult(`✅ Connected to ${host}:${port} [${database}]`);
+            return connection;
+        } catch (error) {
+            attempt++;
+            printError(`❌ MariaDB connection failed on attempt ${attempt}: ${error.message}`);
+            if (attempt >= maxRetries) {
+                printError('❌ MariaDB connection failed after maximum retries.');
+                return null;
+            }
+            printDebug(`Retrying connection in 5000ms...`);
+            await delay(5000);
+        }
     }
+
+    return connection;
 }
