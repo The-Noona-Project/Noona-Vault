@@ -1,6 +1,7 @@
 // /database/redis/initRedis.mjs
 
 import connectRedis from './connectRedis.mjs';
+import { verifyVaultKeyPair } from '../../noona/jwt/verifyKeyPair.mjs';
 import {
     printSection,
     printResult,
@@ -11,8 +12,8 @@ import {
 const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Initializes a Redis connection using the custom connectRedis module.
- * On success, returns { client } (an instance of Redis client); otherwise returns false.
+ * Initializes a Redis connection and validates JWT keypair.
+ * On success, returns { client }; otherwise returns false.
  *
  * @returns {Promise<{ client: import('redis').RedisClientType } | false>}
  */
@@ -29,6 +30,13 @@ export default async function initRedis() {
         if (isDev) {
             const redisURL = process.env.REDIS_URL || 'redis://localhost:6379';
             printDebug(`Redis URL: ${redisURL}`);
+        }
+
+        // 🔐 Vault key verification step
+        const validKeys = await verifyVaultKeyPair(client);
+        if (!validKeys) {
+            printError('❌ Vault JWT key pair validation failed.');
+            return false;
         }
 
         printResult(`✅ Connected to Redis`);
