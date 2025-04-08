@@ -1,11 +1,10 @@
-// initmain.mjs — Clean Boot + Debug + Warden-Compatible
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import chalk from 'chalk';
 
 import { initializeDatabases } from './database/databaseManager.mjs';
-import mountRoutes from './noona/restAPI/routemanager.mjs';
+import { mountRoutesV2 } from './noona/restAPI/routeManagerV2.mjs';
 import {
     printBanner,
     printDivider,
@@ -16,7 +15,6 @@ import {
 } from './noona/logger/logUtils.mjs';
 import { validateEnv } from './noona/logger/validateEnv.mjs';
 
-// Validate environment variables
 validateEnv(
     [
         'PORT',
@@ -37,13 +35,11 @@ let server = null;
 printBanner('Noona Vault');
 printDivider();
 
-// Catch unhandled rejections
 process.on('unhandledRejection', (reason) => {
     printError('⚠️ Unhandled Promise Rejection:');
     console.error(reason);
 });
 
-// Main boot logic
 (async () => {
     try {
         const isDev = process.env.NODE_ENV?.toLowerCase() === 'development';
@@ -70,7 +66,7 @@ process.on('unhandledRejection', (reason) => {
         printResult('✅ Express middleware ready');
 
         printSection('🔁 Mounting REST API Routes');
-        mountRoutes(app);
+        await mountRoutesV2(app); // ✅ V2 only
         printResult('✅ Routes mounted');
 
         printSection('🚀 Starting API Server');
@@ -87,7 +83,6 @@ process.on('unhandledRejection', (reason) => {
     }
 })();
 
-// Graceful shutdown handler
 function handleShutdown(signal) {
     printDivider();
     printSection(`💤 ${signal} received — Shutting down Noona-Vault`);
