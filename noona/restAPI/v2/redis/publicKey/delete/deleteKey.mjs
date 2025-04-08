@@ -1,5 +1,5 @@
 import express from 'express';
-import { printDebug, printError } from '../../../../logger/logUtils.mjs';
+import { printDebug, printError } from '../../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 

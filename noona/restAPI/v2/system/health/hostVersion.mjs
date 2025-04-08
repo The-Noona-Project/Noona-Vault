@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { execSync } from 'child_process';
-import { printDebug, printError } from '../../../logger/logUtils.mjs';
+import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 

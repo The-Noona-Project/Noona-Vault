@@ -1,5 +1,5 @@
 import express from 'express';
-import { getFromRedis } from '../../../../../database/redis/getFromRedis.mjs';
+import { getFromRedis } from '../../../../../../database/redis/getFromRedis.mjs';
 import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 
 const router = express.Router();
