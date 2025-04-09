@@ -1,56 +1,60 @@
-// /noona/restAPI/v2/routeManagerV2.mjs
-
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { printResult, printError } from '../logger/logUtils.mjs';
 import { authLock } from './middleware/authLock.mjs';
-import {
-    printSection,
-    printResult,
-    printError,
-    printDebug,
-    printDivider
-} from '../logger/logUtils.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
- * Mounts all v2 route modules found under /noona/restAPI/v2/
- * @param {Express.Application} app
+ * Mounts versioned API routes under /v2
+ * @param {import('express').Express} app - The Express app instance
  */
 export async function mountRoutesV2(app) {
-    const baseDir = path.join(process.cwd(), 'noona', 'restAPI', 'v2');
-    printSection('🔁 Mounting V2 REST Routes');
+    const v2Base = path.join(__dirname, 'v2');
+    const categories = await fs.readdir(v2Base);
 
-    async function walk(dir, prefix = '') {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-            const fullPath = path.join(dir, entry.name);
+    for (const category of categories) {
+        const categoryPath = path.join(v2Base, category);
+        const stats = await fs.stat(categoryPath);
+        if (!stats.isDirectory()) continue;
 
-            if (entry.isDirectory()) {
-                await walk(fullPath, prefix + '/' + entry.name);
-            } else if (entry.name.endsWith('.mjs')) {
+        const actions = await fs.readdir(categoryPath);
+        for (const action of actions) {
+            const actionPath = path.join(categoryPath, action);
+            const actionStats = await fs.stat(actionPath);
+            if (!actionStats.isDirectory()) continue;
+
+            const files = await fs.readdir(actionPath);
+            for (const file of files) {
+                if (!file.endsWith('.mjs')) continue;
+
+                const routeFile = path.join(actionPath, file);
                 try {
-                    const mod = await import(fullPath);
-                    const router = mod.default;
-                    const meta = mod.routeMeta || {};
-                    const routePath = '/v2' + prefix + '/' + entry.name.replace(/\.mjs$/, '');
-
-                    if (typeof router !== 'function') {
-                        printError(`❌ Skipped ${routePath} — no default export`);
+                    const routeModule = await import(routeFile);
+                    if (!routeModule.default) {
+                        printError(`❌ ❌ Skipped /v2/${category}/${action}/${file.replace('.mjs', '')} — no default export`);
                         continue;
                     }
 
-                    const isPublic = meta.authLevel === 'public';
-                    const routeLog = isPublic ? '🌐 Public Route' : '🔐 Private Route';
+                    const routePath = `/v2/${category}/${action}/${file.replace('.mjs', '')}`;
+                    const isPublic = category === 'system';
 
-                    app.use(routePath, isPublic ? router : authLock, router);
-                    printResult(`${routeLog}: ${routePath}`);
+                    if (isPublic) {
+                        app.use(routePath, routeModule.default);
+                        printResult(`✔ 🌐 Public Route: ${routePath}`);
+                    } else {
+                        app.use(routePath, authLock, routeModule.default);
+                        printResult(`✔ 🔐 Private Route: ${routePath}`);
+                    }
                 } catch (err) {
-                    printError(`❌ Failed to load route: ${entry.name}`);
-                    printDebug(err.stack);
+                    printError(`❌ ❌ Failed to load route: ${file}`);
+                    printError(`DEBUG: ${err.stack}`);
                 }
             }
         }
     }
 
-    await walk(baseDir, '');
-    printDivider();
+    printResult('✔ ✅ Routes mounted');
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { sendToRedis } from '../../../../../../database/redis/sendToRedis.mjs';
-import { printDebug, printError } from '../../../../logger/logUtils.mjs';
+import { printDebug, printError } from '../../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 

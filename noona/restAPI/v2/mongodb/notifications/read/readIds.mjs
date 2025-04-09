@@ -1,35 +1,22 @@
-// /noona/restAPI/v1/notifications/kavita/getIds.mjs
-
-import express from 'express';
+// /restAPI/v2/mongodb/notifications/read/readIds.mjs
 import { getMongoDb } from '../../../../../../database/mongo/initMongo.mjs';
-import { printError } from '../../../../noona/logger/logUtils.mjs';
-
-const router = express.Router();
-
-router.get('/', async (req, res) => {
-    try {
-        const db = getMongoDb();
-        if (!db) return res.status(503).json({ success: false, message: 'Database connection unavailable' });
-
-        const record = await db.collection('kavitaNotifications').findOne({ type: 'kavitaNotifiedIds' });
-        const ids = Array.isArray(record?.ids) ? record.ids : [];
-
-        res.status(200).json({
-            success: true,
-            status: 'ok',
-            notifiedIds: ids
-        });
-    } catch (err) {
-        printError(`Failed to retrieve Kavita notified IDs: ${err.message}`);
-        res.status(500).json({ success: false, message: 'Failed to retrieve notified IDs' });
-    }
-});
 
 export const routeMeta = {
-    path: '/v1/notifications/kavita',
     method: 'GET',
+    path: '/v2/mongodb/notifications/read/ids',
     authLevel: 'protected',
-    description: 'Returns the current list of Kavita notification IDs'
 };
 
-export default router;
+export default async function handler(req, res) {
+    const db = getMongoDb();
+    if (!db) return res.status(503).json({ success: false, message: 'MongoDB not available' });
+
+    try {
+        const record = await db.collection('kavitaNotifications').findOne({ type: 'kavitaNotifiedIds' });
+        const ids = record?.ids || [];
+
+        res.status(200).json({ success: true, ids });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch IDs', error: err.message });
+    }
+}
