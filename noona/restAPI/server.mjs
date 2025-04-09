@@ -4,7 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { printResult } from '../logger/logUtils.mjs';
-import { mountRoutesV2 } from './v2/routeManagerV2.mjs';
+import { mountRoutesV2 } from './routeManagerV2.mjs';
 
 const app = express();
 const PORT = process.env.PORT || 3130;

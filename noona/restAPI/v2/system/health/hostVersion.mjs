@@ -1,14 +1,15 @@
-// /noona/restAPI/v1/system/version.mjs
+// /noona/restAPI/v2/system/hostVersion.mjs
 
 import express from 'express';
 import { execSync } from 'child_process';
+import { getMongoDb } from '../../../../../database/mongo/initMongo.mjs';
 import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 
 /**
- * GET /v1/system/version
- * Public route — returns system and service version details.
+ * GET /v2/system/health/hostVersion
+ * Public route — returns service, Node.js, Docker, and database versions.
  */
 router.get('/', async (req, res) => {
     const result = {
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
         databases: {}
     };
 
-    // Try to get Docker version
+    // Docker Version
     try {
         const output = execSync('docker version --format "{{.Server.Version}}"').toString().trim();
         result.docker = output;
@@ -30,25 +31,29 @@ router.get('/', async (req, res) => {
 
     // MongoDB Version
     try {
-        const client = global.noonaMongoClient;
-        if (client) {
-            const info = await client.db().admin().serverStatus();
-            result.databases.mongo = info.version || 'unknown';
+        const db = getMongoDb();
+        if (db) {
+            const info = await db.admin().serverStatus();
+            result.databases.mongo = info?.version || 'unknown';
+        } else {
+            printDebug('[Version] MongoDB DB object not found');
         }
     } catch (err) {
-        printError('[Version] Failed to fetch MongoDB version');
+        printError(`[Version] MongoDB error: ${err.message}`);
     }
 
     // Redis Version
     try {
-        const client = global.noonaRedisClient?.client;
-        if (client) {
-            const info = await client.info();
+        const redis = global.noonaRedisClient;
+        if (redis) {
+            const info = await redis.info();
             const match = info.match(/redis_version:(\S+)/);
             result.databases.redis = match?.[1] || 'unknown';
+        } else {
+            printDebug('[Version] Redis client not found in global scope');
         }
     } catch (err) {
-        printError('[Version] Failed to fetch Redis version');
+        printError(`[Version] Redis error: ${err.message}`);
     }
 
     // MariaDB Version
@@ -57,9 +62,11 @@ router.get('/', async (req, res) => {
         if (conn) {
             const [rows] = await conn.query('SELECT VERSION() AS version');
             result.databases.mariadb = rows[0]?.version || 'unknown';
+        } else {
+            printDebug('[Version] MariaDB connection not found in global scope');
         }
     } catch (err) {
-        printError('[Version] Failed to fetch MariaDB version');
+        printError(`[Version] MariaDB error: ${err.message}`);
     }
 
     printDebug('[Version] Version info sent to client');
@@ -70,7 +77,7 @@ router.get('/', async (req, res) => {
  * Route metadata — used by dynamic router.
  */
 export const routeMeta = {
-    path: '/v1/system/version',
+    path: '/v2/system/health/hostVersion',
     authLevel: 'public',
     description: 'Returns service, Node.js, Docker, and database versions'
 };
