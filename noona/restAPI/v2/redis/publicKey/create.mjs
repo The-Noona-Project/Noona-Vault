@@ -1,18 +1,12 @@
-// /noona/restAPI/v2/redis/publicKey/create/createKey.mjs
+// ✅ /noona/restAPI/v2/redis/publicKey/create.mjs
 
 import express from 'express';
-import { sendToRedis } from '../../../../../../database/redis/sendToRedis.mjs';
-import { printDebug, printError } from '../../../../../logger/logUtils.mjs';
+import { sendToRedis } from '../../../../../database/redis/sendToRedis.mjs';
+import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 import { generateKeyPair } from '../../../../jwt/generateKeyPair.mjs';
 
 const router = express.Router();
 
-/**
- * Generates and stores a public key for a specific service in Redis.
- *
- * @param {string} service - The service name (e.g., "noona-portal")
- * @returns {Promise<{ success: boolean, publicKey?: string }>}
- */
 export async function handleCreateKey(service) {
     const client = global.noonaRedisClient;
     const keyName = `NOONA:TOKEN:${service}`;
@@ -33,10 +27,6 @@ export async function handleCreateKey(service) {
     }
 }
 
-/**
- * POST /v2/redis/publicKey/create
- * Body: { service: "noona-portal" }
- */
 router.post('/', async (req, res) => {
     const { service } = req.body;
 

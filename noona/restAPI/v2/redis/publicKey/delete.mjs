@@ -1,6 +1,8 @@
+// ✅ /noona/restAPI/v2/redis/publicKey/update.mjs
+
 import express from 'express';
-import { sendToRedis } from '../../../../../../database/redis/sendToRedis.mjs';
-import { printDebug, printError } from '../../../../../logger/logUtils.mjs';
+import { sendToRedis } from '../../../../../database/redis/sendToRedis.mjs';
+import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 
@@ -27,6 +29,7 @@ export async function handleUpdateKey(service, publicKey) {
 
 /**
  * PUT /v2/redis/publicKey/update/:service
+ * Body: { publicKey: "-----BEGIN PUBLIC KEY-----\n..." }
  */
 router.put('/:service', async (req, res) => {
     const { service } = req.params;

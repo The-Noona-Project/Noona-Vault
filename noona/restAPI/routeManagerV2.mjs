@@ -7,6 +7,11 @@ import { authLock } from './middleware/authLock.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const publicRoutes = [
+    '/v2/redis/publicKey/create',
+    '/v2/redis/publicKey/read/:service'
+];
+
 /**
  * Mounts versioned API routes under /v2
  * @param {import('express').Express} app - The Express app instance
@@ -39,9 +44,11 @@ export async function mountRoutesV2(app) {
                     }
 
                     const routePath = `/v2/${category}/${action}/${file.replace('.mjs', '')}`;
-                    const isPublic = category === 'system';
 
-                    if (isPublic) {
+                    const isExplicitPublic = publicRoutes.includes(routePath);
+                    const isSystem = category === 'system';
+
+                    if (isExplicitPublic || isSystem) {
                         app.use(routePath, routeModule.default);
                         printResult(`✔ 🌐 Public Route: ${routePath}`);
                     } else {

@@ -1,13 +1,14 @@
-// /restAPI/v2/mongodb/notifications/delete/deleteIds.mjs
-import { getMongoDb } from '../../../../../../database/mongo/initMongo.mjs';
+// ✅ /noona/restAPI/v2/mongodb/notifications/delete.mjs
 
-export const routeMeta = {
-    method: 'DELETE',
-    path: '/v2/mongodb/notifications/delete/ids',
-    authLevel: 'protected',
-};
+import express from 'express';
+import { getMongoDb } from '../../../../../database/mongo/initMongo.mjs';
 
-export default async function handler(req, res) {
+const router = express.Router();
+
+/**
+ * DELETE /v2/mongodb/notifications/delete
+ */
+router.delete('/', async (req, res) => {
     const db = getMongoDb();
     if (!db) return res.status(503).json({ success: false, message: 'MongoDB not available' });
 
@@ -22,4 +23,13 @@ export default async function handler(req, res) {
     } catch (err) {
         res.status(500).json({ success: false, message: 'Failed to delete IDs', error: err.message });
     }
-}
+});
+
+export const routeMeta = {
+    path: '/v2/mongodb/notifications/delete',
+    method: 'DELETE',
+    authLevel: 'protected',
+    description: 'Deletes the stored notified IDs from MongoDB',
+};
+
+export default router;
