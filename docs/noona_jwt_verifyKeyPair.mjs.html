@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>noona/jwt/verifyKeyPair.mjs - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="module.html#.exports">exports</a></li></ul><h3>Modules</h3><ul><li><a href="module-databaseManager.html">databaseManager</a></li><li><a href="module-initmain.html">initmain</a><ul class='methods'><li data-type='method'><a href="module-initmain.html#~handleShutdown">handleShutdown</a></li></ul></li><li><a href="module-server.html">server</a></li></ul><h3>Global</h3><ul><li><a href="global.html#authLock">authLock</a></li><li><a href="global.html#connectToMongo">connectToMongo</a></li><li><a href="global.html#createPublicKey">createPublicKey</a></li><li><a href="global.html#delay">delay</a></li><li><a href="global.html#deletePublicKey">deletePublicKey</a></li><li><a href="global.html#generateKeyPair">generateKeyPair</a></li><li><a href="global.html#getFromMariadb">getFromMariadb</a></li><li><a href="global.html#getFromMongo">getFromMongo</a></li><li><a href="global.html#getFromRedis">getFromRedis</a></li><li><a href="global.html#getMariaDBConnection">getMariaDBConnection</a></li><li><a href="global.html#getMongoDb">getMongoDb</a></li><li><a href="global.html#getStoredNotificationCount">getStoredNotificationCount</a></li><li><a href="global.html#handleReadKey">handleReadKey</a></li><li><a href="global.html#handleUpdateKey">handleUpdateKey</a></li><li><a href="global.html#initializeDatabases">initializeDatabases</a></li><li><a href="global.html#makeLoadBar">makeLoadBar</a></li><li><a href="global.html#printDbSummary">printDbSummary</a></li><li><a href="global.html#readPublicKey">readPublicKey</a></li><li><a href="global.html#routeMeta">routeMeta</a></li><li><a href="global.html#saveNotifiedItems">saveNotifiedItems</a></li><li><a href="global.html#sendToMariadb">sendToMariadb</a></li><li><a href="global.html#sendToRedis">sendToRedis</a></li><li><a href="global.html#updatePublicKey">updatePublicKey</a></li><li><a href="global.html#validateEnv">validateEnv</a></li><li><a href="global.html#verifyVaultKeyPair">verifyVaultKeyPair</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">noona/jwt/verifyKeyPair.mjs</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// /noona/jwt/verifyKeyPair.mjs
+
+import jwt from 'jsonwebtoken';
+import { getFromRedis } from '../../database/redis/getFromRedis.mjs';
+import {
+    printDebug,
+    printError,
+    printResult
+} from '../logger/logUtils.mjs';
+
+/**
+ * Verifies Vault's private key matches the public key stored in Redis.
+ * Returns true if valid, false if mismatch or missing keys.
+ *
+ * @param {object} redisClient - Connected Redis client (from global.noonaRedisClient)
+ * @returns {Promise&lt;boolean>}
+ */
+export async function verifyVaultKeyPair(redisClient) {
+    const serviceName = 'noona-vault';
+    const redisKey = `NOONA:KEY:${serviceName}:PUBLIC`;
+
+    printDebug('[KEYCHECK] Verifying Vault public/private key pair...');
+
+    // Step 1: Fetch the public key from Redis
+    const publicKey = await getFromRedis(redisClient, redisKey);
+    if (!publicKey) {
+        printError(`[KEYCHECK] ❌ Missing public key in Redis at: ${redisKey}`);
+        return false;
+    }
+
+    // Step 2: Get private key from env
+    const privateKey = process.env.JWT_PRIVATE_KEY;
+    if (!privateKey) {
+        printError('[KEYCHECK] ❌ JWT_PRIVATE_KEY not set in environment');
+        return false;
+    }
+
+    try {
+        // Step 3: Sign and verify test token
+        const token = jwt.sign({ check: 'noona' }, privateKey, {
+            algorithm: 'RS256',
+            expiresIn: '30s'
+        });
+
+        jwt.verify(token, publicKey, { algorithms: ['RS256'] });
+        printResult('✅ [KEYCHECK] Vault JWT key pair is valid');
+        return true;
+    } catch (err) {
+        printError(`[KEYCHECK] ❌ JWT key mismatch: ${err.message}`);
+        return false;
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.4</a> on Sat Apr 12 2025 07:33:48 GMT-0700 (Pacific Daylight Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+
+
+</body>
+</html>

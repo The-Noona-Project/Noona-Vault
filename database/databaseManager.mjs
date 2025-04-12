@@ -1,4 +1,10 @@
-// /database/databaseManager.mjs
+/**
+ * @fileoverview
+ * Initializes connections to MongoDB, Redis, and MariaDB for Noona-Vault.
+ * Populates global connection references and prints a summary table to the console.
+ *
+ * @module databaseManager
+ */
 
 import initMongo from './mongo/initMongo.mjs';
 import initRedis from './redis/initRedis.mjs';
@@ -12,20 +18,26 @@ const isDev = process.env.NODE_ENV === 'development';
 /**
  * Asynchronously initializes connections to MongoDB, Redis, and MariaDB for Noona-Vault.
  *
- * The function attempts to establish connections with each core database, logging connection
- * attempts and outputting debug information (such as connection URLs or host details) when
- * running in development mode. On a successful connection, the respective client or connection
- * object is assigned to a global variable (global.noonaMongoClient, global.noonaRedisClient, and
- * global.noonaMariaConnection). Finally, a summary of all connection statuses is printed.
+ * For each database type:
+ * - Attempts connection using its respective init module
+ * - Logs the connection status and relevant debug info (in dev mode)
+ * - Saves the connection/client to a global variable if successful
+ * - Appends a summary entry to the status report array
  *
  * @async
+ * @function
+ * @returns {Promise<void>} Resolves when all connection attempts are complete
+ *
+ * @global {import('mongodb').MongoClient} global.noonaMongoClient
+ * @global {import('redis').RedisClientType} global.noonaRedisClient
+ * @global {import('mysql2/promise').Connection} global.noonaMariaConnection
  */
 export async function initializeDatabases() {
     const results = [];
 
     printSection('🧠 Booting Database Grid');
 
-    // --- MongoDB
+    // ───────────── MongoDB ─────────────
     printResult('Connecting to MongoDB...');
     const mongo = await initMongo();
     if (isDev) {
@@ -38,7 +50,7 @@ export async function initializeDatabases() {
     });
     if (mongo?.client) global.noonaMongoClient = mongo.client;
 
-    // --- Redis
+    // ───────────── Redis ─────────────
     printResult('Connecting to Redis...');
     const redis = await initRedis();
     if (isDev) {
@@ -51,7 +63,7 @@ export async function initializeDatabases() {
     });
     if (redis?.client) global.noonaRedisClient = redis.client;
 
-    // --- MariaDB
+    // ───────────── MariaDB ─────────────
     printResult('Connecting to MariaDB...');
     const mariadb = await initMariaDB();
     if (isDev) {
@@ -66,6 +78,6 @@ export async function initializeDatabases() {
     });
     if (mariadb?.connection) global.noonaMariaConnection = mariadb.connection;
 
-    // Final Summary
+    // ───────────── Final Summary ─────────────
     printDbSummary(results);
 }

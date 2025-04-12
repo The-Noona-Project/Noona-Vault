@@ -38,5 +38,9 @@
     "mysql2": "^3.14.0",
     "redis": "^4.7.0",
     "table": "^6.9.0"
+  },
+  "devDependencies": {
+    "docdash": "^2.0.2",
+    "jsdoc": "^4.0.4"
   }
 }
