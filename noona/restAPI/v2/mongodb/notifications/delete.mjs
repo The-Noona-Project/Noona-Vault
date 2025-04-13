@@ -1,4 +1,10 @@
-// ✅ /noona/restAPI/v2/mongodb/notifications/delete.mjs
+/**
+ * @fileoverview
+ * Express route to delete the record that stores Kavita notification IDs in MongoDB.
+ * This resets notification tracking (e.g., after a re-import or full rescan).
+ *
+ * @module mongoNotificationDelete
+ */
 
 import express from 'express';
 import { getMongoDb } from '../../../../../database/mongo/initMongo.mjs';
@@ -7,6 +13,13 @@ const router = express.Router();
 
 /**
  * DELETE /v2/mongodb/notifications/delete
+ *
+ * Deletes the document with `{ type: 'kavitaNotifiedIds' }` from the `kavitaNotifications` collection.
+ *
+ * @name DELETE/mongodb/notifications/delete
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>}
  */
 router.delete('/', async (req, res) => {
     const db = getMongoDb();
@@ -25,6 +38,10 @@ router.delete('/', async (req, res) => {
     }
 });
 
+/**
+ * Metadata for dynamic route loaders.
+ * @type {{ path: string, method: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/mongodb/notifications/delete',
     method: 'DELETE',

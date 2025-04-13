@@ -1,14 +1,21 @@
-// /database/mongo/getFromMongo.mjs
+/**
+ * @fileoverview
+ * Fetches documents from a MongoDB collection based on a query filter.
+ *
+ * @module getFromMongo
+ */
 
 import { getMongoDb } from './initMongo.mjs';
 import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Retrieves documents from the specified MongoDB collection using the provided filter.
+ * Queries documents from the specified collection.
  *
- * @param {string} collectionName - The name of the collection to query.
- * @param {object} [filter={}] - Query filter criteria.
- * @returns {Promise<Array|null>} - An array of documents if successful; otherwise, null.
+ * @async
+ * @function
+ * @param {string} collectionName - MongoDB collection to query
+ * @param {object} [filter={}] - Optional filter for MongoDB query
+ * @returns {Promise<Array|null>} Array of documents or null if error/invalid DB
  */
 export async function getFromMongo(collectionName, filter = {}) {
     const db = getMongoDb();
@@ -16,6 +23,7 @@ export async function getFromMongo(collectionName, filter = {}) {
         printError('[Mongo] Database not connected');
         return null;
     }
+
     try {
         const collection = db.collection(collectionName);
         const docs = await collection.find(filter).toArray();
@@ -27,5 +35,5 @@ export async function getFromMongo(collectionName, filter = {}) {
     }
 }
 
-// Re-export getMongoDb so that route files can import it as expected.
+// Re-export getMongoDb so routes can import from here
 export { getMongoDb } from './initMongo.mjs';

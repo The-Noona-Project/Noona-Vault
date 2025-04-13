@@ -1,12 +1,18 @@
-// ✅ /noona/logger/validateEnv.mjs
+/**
+ * @fileoverview
+ * Validates required and optional environment variables.
+ * Logs missing keys and exits the process if required keys are missing.
+ *
+ * @module validateEnv
+ */
 
 import { printResult, printError, printDebug, printSection, printDivider } from './logUtils.mjs';
 
 /**
- * Validates required and optional environment variables.
+ * Validates and logs environment variable status.
  *
- * @param {string[]} requiredVars - Required environment variable keys
- * @param {string[]} optionalVars - Optional keys to show in logs if present
+ * @param {string[]} requiredVars - Environment variables required to boot
+ * @param {string[]} [optionalVars=[]] - Optional vars to show if present/missing
  */
 export function validateEnv(requiredVars = [], optionalVars = []) {
     printDivider();

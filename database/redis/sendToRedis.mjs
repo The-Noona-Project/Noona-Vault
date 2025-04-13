@@ -1,17 +1,23 @@
-// /database/redis/sendToRedis.mjs
+/**
+ * @fileoverview
+ * Stores a value in Redis under a specified key using a Redis client.
+ * Returns false on client error or failure to write.
+ *
+ * @module sendToRedis
+ */
 
 import { printResult, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Safely sets a value in Redis.
+ * Sets a value in Redis under the given key.
  *
- * Attempts to store a value under a specified key in Redis. If the provided client is invalid or disconnected,
- * or if the operation fails, the function logs an error and returns false.
- *
- * @param {string} key - The Redis key to set.
- * @param {string} value - The value to store.
- * @param {object} [options] - Optional Redis set options.
- * @returns {Promise<boolean>} Resolves to true if the operation is successful, or false otherwise.
+ * @async
+ * @function
+ * @param {import('redis').RedisClientType} client - Redis client instance
+ * @param {string} key - Redis key to set
+ * @param {string} value - Value to store
+ * @param {object} [options={}] - Optional Redis set options (e.g., { EX: 60 })
+ * @returns {Promise<boolean>} Whether the operation was successful
  */
 export async function sendToRedis(client, key, value, options = {}) {
     if (!client || typeof client.set !== 'function') {

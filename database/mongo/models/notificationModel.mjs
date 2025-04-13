@@ -1,4 +1,10 @@
-// /database/mongo/models/notificationModel.mjs
+/**
+ * @fileoverview
+ * NotificationModel class for MongoDB storage of notified Kavita item metadata.
+ * Provides methods for inserting and querying notification batches.
+ *
+ * @module notificationModel
+ */
 
 import { getMongoDb } from '../initMongo.mjs';
 import { printError } from '../../../noona/logger/logUtils.mjs';
@@ -14,10 +20,11 @@ export default class NotificationModel {
     }
 
     /**
-     * Saves notified item data to MongoDB.
-     * @param {string} batchId
-     * @param {Array<Object>} items
-     * @returns {Promise<Object>} { successCount }
+     * Saves a batch of notification items into MongoDB.
+     *
+     * @param {string} batchId - Unique ID for the batch (e.g., timestamp or UUID)
+     * @param {Array<Object>} items - Array of items to store
+     * @returns {Promise<{ successCount: number }>} Count of successfully inserted documents
      */
     async saveNotifiedItems(batchId, items) {
         try {
@@ -37,7 +44,9 @@ export default class NotificationModel {
     }
 
     /**
-     * Returns the number of stored notifications.
+     * Returns the number of stored notification documents.
+     *
+     * @returns {Promise<number>} Total number of documents in the collection
      */
     async getStoredNotificationCount() {
         return await this.collection.countDocuments();

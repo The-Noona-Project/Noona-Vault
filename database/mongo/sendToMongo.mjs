@@ -1,32 +1,37 @@
-// /database/mongo/getFromMongo.mjs
+/**
+ * @fileoverview
+ * Inserts documents into a MongoDB collection.
+ * Used to persist bulk or single entries in Noona-Vault’s DB layer.
+ *
+ * @module sendToMongo
+ */
 
 import { getMongoDb } from './initMongo.mjs';
-import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
+import { printResult, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Retrieves documents from a MongoDB collection that match the provided filter.
+ * Inserts documents into a collection.
  *
- * This asynchronous function obtains a database connection and attempts to query
- * the specified collection using the given filter criteria. If the database connection
- * is unavailable or an error occurs during the query, the function logs an error and returns null.
- *
- * @param {string} collectionName - The name of the MongoDB collection to query.
- * @param {object} [filter={}] - Optional filter criteria for selecting documents.
- * @returns {Promise<Array|null>} A promise that resolves to an array of documents if successful; otherwise, null.
+ * @async
+ * @function
+ * @param {string} collectionName - Collection to insert into
+ * @param {Array<object>} documents - Documents to insert
+ * @returns {Promise<boolean>} Whether the insert was successful
  */
-export async function getFromMongo(collectionName, filter = {}) {
+export async function sendToMongo(collectionName, documents) {
     const db = getMongoDb();
     if (!db) {
         printError('[Mongo] Database not connected');
-        return null;
+        return false;
     }
+
     try {
         const collection = db.collection(collectionName);
-        const docs = await collection.find(filter).toArray();
-        printDebug(`[Mongo] Fetched ${docs.length} documents from "${collectionName}"`);
-        return docs;
+        const result = await collection.insertMany(documents);
+        printResult(`[Mongo] Inserted ${result.insertedCount} document(s) into "${collectionName}"`);
+        return true;
     } catch (err) {
-        printError(`[Mongo] Failed to fetch documents from "${collectionName}": ${err.message}`);
-        return null;
+        printError(`[Mongo] Failed to insert documents: ${err.message}`);
+        return false;
     }
 }

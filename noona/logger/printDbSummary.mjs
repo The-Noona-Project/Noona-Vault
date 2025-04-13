@@ -1,4 +1,9 @@
-// ✅ /noona/logger/printDbSummary.mjs
+/**
+ * @fileoverview
+ * Prints a styled summary table of database connection statuses using cli-table3.
+ *
+ * @module printDbSummary
+ */
 
 import chalk from 'chalk';
 import Table from 'cli-table3';
@@ -6,7 +11,7 @@ import Table from 'cli-table3';
 /**
  * Displays a visual summary of database connection statuses.
  *
- * @param {Array<{ name: string, status: boolean, info: string }>} dbs
+ * @param {Array<{ name: string, status: boolean, info: string }>} dbs - DB metadata for summary
  */
 export function printDbSummary(dbs = []) {
     const table = new Table({

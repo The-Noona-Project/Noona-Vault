@@ -1,14 +1,19 @@
-// /database/mariadb/initMariadb.mjs
+/**
+ * @fileoverview
+ * Initializes and returns a MariaDB connection wrapper for Noona-Vault.
+ *
+ * @module initMariadb
+ */
 
 import connectMariadb from './connectMariadb.mjs';
 import { printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Attempts to establish a connection to a MariaDB database.
+ * Initializes the MariaDB client and wraps it for global use.
  *
- * This asynchronous function invokes `connectMariadb` to create a database connection. If a connection is successfully established, it returns an object containing the connection; otherwise, it logs an error using `printError` and returns false.
- *
- * @returns {Promise<{connection: object} | false>} A promise that resolves to an object with the database connection if successful, or false if the connection failed.
+ * @async
+ * @function
+ * @returns {Promise<{connection: import('mysql2/promise').Connection} | false>} Wrapped connection or false
  */
 export default async function initMariaDB() {
     const connection = await connectMariadb();

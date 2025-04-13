@@ -1,7 +1,7 @@
 /**
  * @fileoverview
  * Initializes connections to MongoDB, Redis, and MariaDB for Noona-Vault.
- * Populates global connection references and prints a summary table to the console.
+ * Stores connected clients globally and prints a summarized status table.
  *
  * @module databaseManager
  */
@@ -16,17 +16,17 @@ import { printSection, printDebug, printResult } from '../noona/logger/logUtils.
 const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Asynchronously initializes connections to MongoDB, Redis, and MariaDB for Noona-Vault.
+ * Initializes database connections and populates global connection handles:
  *
- * For each database type:
- * - Attempts connection using its respective init module
- * - Logs the connection status and relevant debug info (in dev mode)
- * - Saves the connection/client to a global variable if successful
- * - Appends a summary entry to the status report array
+ * - `global.noonaMongoClient` for MongoDB
+ * - `global.noonaRedisClient` for Redis
+ * - `global.noonaMariaConnection` for MariaDB
+ *
+ * Also prints a health summary for logging/debugging purposes.
  *
  * @async
  * @function
- * @returns {Promise<void>} Resolves when all connection attempts are complete
+ * @returns {Promise<void>} Resolves once all databases are initialized
  *
  * @global {import('mongodb').MongoClient} global.noonaMongoClient
  * @global {import('redis').RedisClientType} global.noonaRedisClient
@@ -48,36 +48,4 @@ export async function initializeDatabases() {
         status: !!mongo,
         info: process.env.MONGO_URL || 'mongodb://localhost:27017/noona'
     });
-    if (mongo?.client) global.noonaMongoClient = mongo.client;
-
-    // ───────────── Redis ─────────────
-    printResult('Connecting to Redis...');
-    const redis = await initRedis();
-    if (isDev) {
-        printDebug(`Redis URL: ${process.env.REDIS_URL || 'redis://localhost:6379'}`);
-    }
-    results.push({
-        name: 'Redis',
-        status: !!redis,
-        info: process.env.REDIS_URL || 'redis://localhost:6379'
-    });
-    if (redis?.client) global.noonaRedisClient = redis.client;
-
-    // ───────────── MariaDB ─────────────
-    printResult('Connecting to MariaDB...');
-    const mariadb = await initMariaDB();
-    if (isDev) {
-        printDebug(`MariaDB Host: ${process.env.MARIADB_HOST || 'localhost'}`);
-        printDebug(`MariaDB User: ${process.env.MARIADB_USER || 'root'}`);
-        printDebug(`MariaDB Port: ${process.env.MARIADB_PORT || '3306'}`);
-    }
-    results.push({
-        name: 'MariaDB',
-        status: !!mariadb,
-        info: `${process.env.MARIADB_USER || 'root'}@${process.env.MARIADB_HOST || 'localhost'}:${process.env.MARIADB_PORT || 3306}`
-    });
-    if (mariadb?.connection) global.noonaMariaConnection = mariadb.connection;
-
-    // ───────────── Final Summary ─────────────
-    printDbSummary(results);
-}
+    if (mongo?.client) global

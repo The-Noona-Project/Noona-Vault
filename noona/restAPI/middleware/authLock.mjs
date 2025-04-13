@@ -1,16 +1,34 @@
-// /noona/restAPI/middleware/authLock.mjs
+/**
+ * @fileoverview
+ * Middleware to enforce JWT-based authentication using per-service public keys stored in Redis.
+ * Verifies RS256 tokens by dynamically fetching the appropriate public key based on the `iss` field.
+ *
+ * On success:
+ * - `req.user` is populated with the decoded JWT payload.
+ *
+ * On failure:
+ * - Responds with 401 if no token is provided.
+ * - Responds with 403 for invalid or unverified tokens.
+ *
+ * @module authLock
+ */
 
 import jwt from 'jsonwebtoken';
 import { getFromRedis } from '../../../database/redis/getFromRedis.mjs';
 import { printDebug, printError } from '../../logger/logUtils.mjs';
 
 /**
- * Express middleware that validates JWTs using per-service public keys.
+ * Express middleware that validates JWTs using per-service public keys from Redis.
  *
- * Looks for Authorization header (Bearer <token>), extracts `iss` from JWT,
- * fetches `NOONA:TOKEN:<issuer>` from Redis, and verifies the token.
+ * @async
+ * @function authLock
+ * @param {import('express').Request} req - Incoming HTTP request
+ * @param {import('express').Response} res - HTTP response object
+ * @param {import('express').NextFunction} next - Express next() function to proceed
+ * @returns {Promise<void>} If token is valid, continues to next middleware. Otherwise sends 401/403 response.
  *
- * On success, attaches `req.user`. On failure, returns 401 or 403.
+ * @example
+ * app.use('/v2/protected/route', authLock, myRouteHandler);
  */
 export async function authLock(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -27,7 +45,7 @@ export async function authLock(req, res, next) {
         const client = global.noonaRedisClient;
         if (!client) throw new Error('Redis client not initialized');
 
-        // Decode the token without verifying to extract the issuer
+        // Decode the token header/payload (without verifying) to get the issuer
         const decodedUnverified = jwt.decode(token, { complete: true });
         const issuer = decodedUnverified?.payload?.iss;
 
@@ -42,6 +60,7 @@ export async function authLock(req, res, next) {
             throw new Error(`Public key not found for issuer: ${issuer}`);
         }
 
+        // Verify the token using the public key (RS256)
         const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] });
         req.user = decoded;
 

@@ -1,4 +1,12 @@
-// /noona/restAPI/v2/system/hostVersion.mjs
+/**
+ * @fileoverview
+ * Express router that provides detailed version information for the Noona-Vault service,
+ * including Node.js, Docker, and all connected databases (MongoDB, Redis, MariaDB).
+ *
+ * This route is useful for diagnostics, dashboard displays, or external service checks.
+ *
+ * @module hostVersion
+ */
 
 import express from 'express';
 import { execSync } from 'child_process';
@@ -9,7 +17,18 @@ const router = express.Router();
 
 /**
  * GET /v2/system/health/hostVersion
- * Public route — returns service, Node.js, Docker, and database versions.
+ *
+ * Public route that returns version metadata:
+ * - Service version (from package.json)
+ * - Node.js runtime version
+ * - Docker server version (via CLI)
+ * - MongoDB, Redis, and MariaDB versions
+ *
+ * @function
+ * @name GET/hostVersion
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<import('express').Response>} JSON containing version info
  */
 router.get('/', async (req, res) => {
     const result = {
@@ -74,7 +93,8 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Route metadata — used by dynamic router.
+ * Route metadata — used for automatic registration or docs.
+ * @type {{ path: string, authLevel: string, description: string }}
  */
 export const routeMeta = {
     path: '/v2/system/health/hostVersion',

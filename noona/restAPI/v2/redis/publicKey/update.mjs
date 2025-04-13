@@ -1,3 +1,11 @@
+/**
+ * @fileoverview
+ * Express route to overwrite a service's public key in Redis.
+ * This is used when a Noona service rotates its RSA key.
+ *
+ * @module redisPublicKeyUpdate
+ */
+
 import express from 'express';
 import { sendToRedis } from '../../../../../database/redis/sendToRedis.mjs';
 import { printDebug, printError } from '../../../../logger/logUtils.mjs';
@@ -5,10 +13,13 @@ import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 const router = express.Router();
 
 /**
- * Updates (overwrites) the public key for a service.
- * @param {string} service - Service name
- * @param {string} publicKey - New public key
- * @returns {Promise<boolean>} Success flag
+ * Updates (overwrites) the public key for a given service.
+ *
+ * @async
+ * @function
+ * @param {string} service - Name of the target service
+ * @param {string} publicKey - PEM-encoded public key to store
+ * @returns {Promise<boolean>} Whether the update succeeded
  */
 export async function handleUpdateKey(service, publicKey) {
     const client = global.noonaRedisClient;
@@ -27,6 +38,10 @@ export async function handleUpdateKey(service, publicKey) {
 
 /**
  * PUT /v2/redis/publicKey/update/:service
+ *
+ * Body: { publicKey: "<PEM key>" }
+ *
+ * Overwrites the Redis value for a service’s public key.
  */
 router.put('/:service', async (req, res) => {
     const { service } = req.params;
@@ -42,10 +57,14 @@ router.put('/:service', async (req, res) => {
     return res.status(200).json({
         success: true,
         msg: `Public key updated for ${service}`,
-        keyName: `NOONA:TOKEN:${service}`,
+        keyName: `NOONA:TOKEN:${service}`
     });
 });
 
+/**
+ * Route metadata used by Noona’s dynamic route loader.
+ * @type {{ path: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/redis/publicKey/update/:service',
     authLevel: 'public',

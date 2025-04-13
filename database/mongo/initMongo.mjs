@@ -1,4 +1,10 @@
-// /database/mongo/initMongo.mjs
+/**
+ * @fileoverview
+ * Initializes a connection to MongoDB using Mongoose, with optional admin auth.
+ * Makes the `db` instance available via `getMongoDb()`.
+ *
+ * @module initMongo
+ */
 
 import mongoose from 'mongoose';
 import { printSection, printResult, printError, printDebug } from '../../noona/logger/logUtils.mjs';
@@ -7,14 +13,15 @@ let mongoDb = null;
 const isDev = process.env.NODE_ENV === 'development';
 
 /**
- * Initializes MongoDB using Mongoose with optional admin authentication.
+ * Establishes a MongoDB connection using environment config.
  *
- * @returns {Promise<{ client: typeof mongoose, db: object } | false>}
+ * @async
+ * @function
+ * @returns {Promise<{ client: typeof mongoose, db: object } | false>} Connection metadata or false on failure
  */
 export default async function initMongo() {
     let mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017/noona';
 
-    // Append authSource=admin if not already present
     if (!mongoURL.includes('authSource=')) {
         const separator = mongoURL.includes('?') ? '&' : '?';
         mongoURL += `${separator}authSource=admin`;
@@ -30,7 +37,6 @@ export default async function initMongo() {
             maxPoolSize: 10
         });
 
-        // Connection listeners
         mongoose.connection.on('error', (err) => {
             printError(`[MongoDB] Connection error: ${err.message}`);
         });
@@ -50,9 +56,10 @@ export default async function initMongo() {
 }
 
 /**
- * Access the connected MongoDB instance directly.
+ * Access the connected MongoDB database instance.
  *
- * @returns {object|null} The connected MongoDB database instance.
+ * @function
+ * @returns {object|null} MongoDB DB instance or null if not connected
  */
 export function getMongoDb() {
     return mongoDb;

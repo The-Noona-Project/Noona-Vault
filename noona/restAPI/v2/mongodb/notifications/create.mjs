@@ -1,4 +1,10 @@
-// ✅ /noona/restAPI/v2/mongodb/notifications/create.mjs
+/**
+ * @fileoverview
+ * Express route that stores a list of "notified" item IDs in MongoDB under a known document key.
+ * Used to persist which Kavita items have been previously announced, avoiding duplicates.
+ *
+ * @module mongoNotificationCreate
+ */
 
 import express from 'express';
 import { getMongoDb } from '../../../../../database/mongo/initMongo.mjs';
@@ -7,7 +13,20 @@ const router = express.Router();
 
 /**
  * POST /v2/mongodb/notifications/create
- * Body: { ids: [ ... ] }
+ *
+ * Request Body:
+ * ```json
+ * {
+ *   "ids": ["abc123", "def456", ...]
+ * }
+ * ```
+ *
+ * Stores the given IDs under a document with `{ type: 'kavitaNotifiedIds' }`.
+ *
+ * @name POST/mongodb/notifications/create
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>}
  */
 router.post('/', async (req, res) => {
     const db = getMongoDb();
@@ -31,6 +50,10 @@ router.post('/', async (req, res) => {
     }
 });
 
+/**
+ * Metadata for dynamic route loaders.
+ * @type {{ path: string, method: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/mongodb/notifications/create',
     method: 'POST',

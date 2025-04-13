@@ -1,4 +1,10 @@
-// ✅ /noona/restAPI/v2/redis/publicKey/read.mjs
+/**
+ * @fileoverview
+ * Express route to fetch the public key of a service from Redis.
+ * Commonly used by services like Noona-Portal to retrieve their validation key.
+ *
+ * @module redisPublicKeyRead
+ */
 
 import express from 'express';
 import { getFromRedis } from '../../../../../database/redis/getFromRedis.mjs';
@@ -8,13 +14,17 @@ const router = express.Router();
 
 /**
  * Retrieves the public key for a given service from Redis.
- * @param {string} service - Service name
- * @returns {Promise<string|null>} The public key or null if not found
+ *
+ * @async
+ * @function
+ * @param {string} service - Service name (used in Redis key name)
+ * @returns {Promise<string|null>} The PEM-formatted public key, or null if not found
  */
 export async function handleReadKey(service) {
     const client = global.noonaRedisClient;
     const keyName = `NOONA:TOKEN:${service}`;
     if (!client) throw new Error('Redis unavailable');
+
     try {
         const key = await getFromRedis(client, keyName);
         if (!key) {
@@ -31,6 +41,9 @@ export async function handleReadKey(service) {
 
 /**
  * GET /v2/redis/publicKey/read/:service
+ *
+ * Fetches the stored public key for a service from Redis.
+ * Returns metadata about the key including length and format.
  */
 router.get('/:service', async (req, res) => {
     const { service } = req.params;
@@ -47,11 +60,15 @@ router.get('/:service', async (req, res) => {
             format: 'PEM',
             length: key.length,
             source: 'Redis',
-            keyName: `NOONA:TOKEN:${service}`,
+            keyName: `NOONA:TOKEN:${service}`
         }
     });
 });
 
+/**
+ * Route metadata used by Noona’s dynamic route loader.
+ * @type {{ path: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/redis/publicKey/read/:service',
     authLevel: 'public',

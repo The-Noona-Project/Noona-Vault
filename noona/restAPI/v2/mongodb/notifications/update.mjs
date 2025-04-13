@@ -1,4 +1,10 @@
-// ✅ /noona/restAPI/v2/mongodb/notifications/update.mjs
+/**
+ * @fileoverview
+ * Express route to merge newly notified Kavita item IDs with existing ones stored in MongoDB.
+ * Prevents duplicate notifications by merging and deduplicating ID arrays.
+ *
+ * @module mongoNotificationUpdate
+ */
 
 import express from 'express';
 import { getMongoDb } from '../../../../../database/mongo/initMongo.mjs';
@@ -7,11 +13,26 @@ const router = express.Router();
 
 /**
  * PUT /v2/mongodb/notifications/update
- * Body: { ids: [ ... ] }
+ *
+ * Request Body:
+ * ```json
+ * {
+ *   "ids": ["newId1", "newId2", ...]
+ * }
+ * ```
+ *
+ * Merges the new IDs with the existing list and stores the result.
+ *
+ * @name PUT/mongodb/notifications/update
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<void>}
  */
 router.put('/', async (req, res) => {
     const db = getMongoDb();
-    if (!db) return res.status(503).json({ success: false, message: 'MongoDB not available' });
+    if (!db) {
+        return res.status(503).json({ success: false, message: 'MongoDB not available' });
+    }
 
     try {
         const { ids } = req.body;
@@ -36,6 +57,10 @@ router.put('/', async (req, res) => {
     }
 });
 
+/**
+ * Route metadata for dynamic router use.
+ * @type {{ path: string, method: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/mongodb/notifications/update',
     method: 'PUT',
