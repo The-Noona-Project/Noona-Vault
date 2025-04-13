@@ -1,58 +1,79 @@
-// ✅ /noona/restAPI/v2/redis/publicKey/update.mjs
+/**
+ * @fileoverview
+ * Express route to delete a stored public key for a service from Redis.
+ * Used when a service is decommissioned or needs a clean reset.
+ *
+ * @module redisPublicKeyDelete
+ */
 
 import express from 'express';
-import { sendToRedis } from '../../../../../database/redis/sendToRedis.mjs';
 import { printDebug, printError } from '../../../../logger/logUtils.mjs';
 
 const router = express.Router();
 
 /**
- * Updates (overwrites) the public key for a service.
- * @param {string} service - Service name
- * @param {string} publicKey - New public key
- * @returns {Promise<boolean>} Success flag
+ * Deletes a Redis key corresponding to a service's public key.
+ *
+ * @async
+ * @function
+ * @param {string} service - The service name (e.g., 'noona-portal')
+ * @returns {Promise<boolean>} Whether the deletion succeeded
  */
-export async function handleUpdateKey(service, publicKey) {
+export async function handleDeleteKey(service) {
     const client = global.noonaRedisClient;
     const keyName = `NOONA:TOKEN:${service}`;
-    if (!client) throw new Error('Redis unavailable');
+
+    if (!client) {
+        printError('[Vault] ❌ Redis client unavailable');
+        return false;
+    }
 
     try {
-        await sendToRedis(client, keyName, publicKey);
-        printDebug(`[Vault] 🔄 Public key updated for ${service}`);
-        return true;
+        const deleted = await client.del(keyName);
+        if (deleted) {
+            printDebug(`[Vault] 🗑️ Deleted Redis key for ${service}`);
+            return true;
+        } else {
+            printError(`[Vault] ⚠️ Redis key not found for ${service}`);
+            return false;
+        }
     } catch (err) {
-        printError(`[Vault] ❌ Failed to update key for ${service}: ${err.message}`);
+        printError(`[Vault] ❌ Failed to delete Redis key for ${service}: ${err.message}`);
         return false;
     }
 }
 
 /**
- * PUT /v2/redis/publicKey/update/:service
- * Body: { publicKey: "-----BEGIN PUBLIC KEY-----\n..." }
+ * DELETE /v2/redis/publicKey/delete/:service
+ *
+ * Deletes the stored public key for a service.
  */
-router.put('/:service', async (req, res) => {
+router.delete('/:service', async (req, res) => {
     const { service } = req.params;
-    const { publicKey } = req.body;
 
-    if (!publicKey) {
-        return res.status(400).json({ success: false, msg: 'Missing publicKey' });
+    const success = await handleDeleteKey(service);
+    if (!success) {
+        return res.status(404).json({
+            success: false,
+            msg: `Public key not found or failed to delete for ${service}`
+        });
     }
-
-    const ok = await handleUpdateKey(service, publicKey);
-    if (!ok) return res.status(500).json({ success: false, msg: 'Update failed' });
 
     return res.status(200).json({
         success: true,
-        msg: `Public key updated for ${service}`,
-        keyName: `NOONA:TOKEN:${service}`,
+        msg: `Public key deleted for ${service}`,
+        keyName: `NOONA:TOKEN:${service}`
     });
 });
 
+/**
+ * Route metadata used by Noona’s dynamic route loader.
+ * @type {{ path: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
-    path: '/v2/redis/publicKey/update/:service',
+    path: '/v2/redis/publicKey/delete/:service',
     authLevel: 'public',
-    description: 'Update the stored public key for a service',
+    description: 'Delete the stored public key for a service',
 };
 
 export default router;

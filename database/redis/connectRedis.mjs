@@ -1,4 +1,10 @@
-// /database/redis/connectRedis.mjs
+/**
+ * @fileoverview
+ * Creates and connects a Redis client using environment configuration.
+ * On success, returns the Redis client instance; on failure, returns null.
+ *
+ * @module connectRedis
+ */
 
 import { createClient } from 'redis';
 import { printDebug, printError, printResult } from '../../noona/logger/logUtils.mjs';
@@ -6,13 +12,9 @@ import { printDebug, printError, printResult } from '../../noona/logger/logUtils
 /**
  * Asynchronously connects to a Redis database.
  *
- * This function creates a Redis client using the URL specified in the REDIS_URL environment variable,
- * defaulting to "redis://localhost:6379" if not provided. It sets up an error listener on the client,
- * attempts to establish a connection, logs the outcome, and returns the client instance upon success.
- * If the connection fails, it logs the error and returns null.
- *
- * @returns {Promise<Object|null>} A promise that resolves to the Redis client instance if connected,
- * or null if an error occurs.
+ * @async
+ * @function
+ * @returns {Promise<import('redis').RedisClientType|null>} Redis client instance or null if failed
  */
 export default async function connectRedis() {
     const redisURL = process.env.REDIS_URL || 'redis://localhost:6379';

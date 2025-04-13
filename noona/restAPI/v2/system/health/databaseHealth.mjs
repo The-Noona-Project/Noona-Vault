@@ -1,5 +1,20 @@
-// /routes/v2/system/databaseHealth.mjs
+/**
+ * @fileoverview
+ * Express handler that returns the connection status for MongoDB, Redis, and MariaDB.
+ * Uses the presence of global connection variables to determine whether each DB is online.
+ *
+ * @module databaseHealth
+ */
 
+/**
+ * GET /v2/system/health/databaseHealth
+ * Returns online/offline status and connection details for each supported database.
+ *
+ * @function
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @returns {Promise<import('express').Response>} JSON response with database status
+ */
 export default async function databaseHealthHandler(req, res) {
     const results = {};
 

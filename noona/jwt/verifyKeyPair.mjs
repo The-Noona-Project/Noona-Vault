@@ -1,4 +1,10 @@
-// /noona/jwt/verifyKeyPair.mjs
+/**
+ * @fileoverview
+ * Validates that Vault's private key (from environment) matches the public key stored in Redis.
+ * This confirms that JWTs signed by Vault can be verified by other services.
+ *
+ * @module verifyKeyPair
+ */
 
 import jwt from 'jsonwebtoken';
 import { getFromRedis } from '../../database/redis/getFromRedis.mjs';
@@ -9,11 +15,19 @@ import {
 } from '../logger/logUtils.mjs';
 
 /**
- * Verifies Vault's private key matches the public key stored in Redis.
- * Returns true if valid, false if mismatch or missing keys.
+ * Verifies Vault’s private key against its stored Redis public key.
  *
- * @param {object} redisClient - Connected Redis client (from global.noonaRedisClient)
- * @returns {Promise<boolean>}
+ * - Fetches `NOONA:KEY:noona-vault:PUBLIC` from Redis
+ * - Signs a test JWT with the private key
+ * - Verifies it against the public key
+ *
+ * @async
+ * @function
+ * @param {import('redis').RedisClientType} redisClient - Active Redis client instance
+ * @returns {Promise<boolean>} True if the key pair is valid, false if mismatched or missing
+ *
+ * @example
+ * const isValid = await verifyVaultKeyPair(global.noonaRedisClient);
  */
 export async function verifyVaultKeyPair(redisClient) {
     const serviceName = 'noona-vault';
@@ -28,7 +42,7 @@ export async function verifyVaultKeyPair(redisClient) {
         return false;
     }
 
-    // Step 2: Get private key from env
+    // Step 2: Load private key from environment
     const privateKey = process.env.JWT_PRIVATE_KEY;
     if (!privateKey) {
         printError('[KEYCHECK] ❌ JWT_PRIVATE_KEY not set in environment');
@@ -36,7 +50,7 @@ export async function verifyVaultKeyPair(redisClient) {
     }
 
     try {
-        // Step 3: Sign and verify test token
+        // Step 3: Generate and verify test JWT
         const token = jwt.sign({ check: 'noona' }, privateKey, {
             algorithm: 'RS256',
             expiresIn: '30s'

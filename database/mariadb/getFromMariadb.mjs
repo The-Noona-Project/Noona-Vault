@@ -1,14 +1,22 @@
-// /database/mariadb/getFromMariadb.mjs
+/**
+ * @fileoverview
+ * Executes a SELECT query against MariaDB using a connection instance.
+ * Also provides a helper to access the global MariaDB connection.
+ *
+ * @module getFromMariadb
+ */
 
 import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
  * Executes a SELECT query against MariaDB.
  *
- * @param {import('mysql2/promise').Connection} connection - MariaDB connection instance.
- * @param {string} query - The SQL query string.
- * @param {Array} [values=[]] - Values for the parameterized query.
- * @returns {Promise<Array|null>} - The resulting rows, or null if an error occurs.
+ * @async
+ * @function
+ * @param {import('mysql2/promise').Connection} connection - MariaDB connection instance
+ * @param {string} query - SQL query string
+ * @param {Array<any>} [values=[]] - Optional parameters for the query
+ * @returns {Promise<Array|null>} Query result rows or null if failed
  */
 export async function getFromMariadb(connection, query, values = []) {
     if (!connection) {
@@ -26,8 +34,10 @@ export async function getFromMariadb(connection, query, values = []) {
 }
 
 /**
- * Returns the globally stored MariaDB connection.
- * This allows other modules (such as your CRUD routes) to retrieve the active connection.
+ * Returns the globally stored MariaDB connection instance.
+ *
+ * @function
+ * @returns {import('mysql2/promise').Connection | undefined} Global MariaDB connection
  */
 export function getMariaDBConnection() {
     return global.noonaMariaConnection;

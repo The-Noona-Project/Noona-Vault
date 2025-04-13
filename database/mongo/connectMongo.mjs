@@ -1,13 +1,20 @@
-// /database/mongo/connectMongo.mjs
+/**
+ * @fileoverview
+ * Returns the currently connected MongoDB database instance.
+ * Assumes `initMongo()` has already been called.
+ *
+ * @module connectMongo
+ */
 
 import { getMongoDb } from './initMongo.mjs';
 
 /**
- * Returns the connected MongoDB database instance.
- * This function assumes that initMongo.mjs has been called to establish the connection.
+ * Retrieves the connected MongoDB DB instance.
  *
- * @returns {object|null} The connected MongoDB instance.
+ * @function
+ * @returns {object|null} MongoDB DB or null if not initialized
  */
 export async function connectToMongo() {
     return getMongoDb();
 }
+ 

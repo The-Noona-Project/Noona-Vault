@@ -1,4 +1,10 @@
-// ✅ /noona/restAPI/v2/redis/publicKey/create.mjs
+/**
+ * @fileoverview
+ * Express route that generates a new RSA public key for a service and stores it in Redis.
+ * This route is public and used by other Noona services to initialize their secure identity.
+ *
+ * @module redisPublicKeyCreate
+ */
 
 import express from 'express';
 import { sendToRedis } from '../../../../../database/redis/sendToRedis.mjs';
@@ -7,6 +13,14 @@ import { generateKeyPair } from '../../../../jwt/generateKeyPair.mjs';
 
 const router = express.Router();
 
+/**
+ * Generates an RSA keypair and stores the public key in Redis.
+ *
+ * @async
+ * @function
+ * @param {string} service - The service name (used as Redis key suffix)
+ * @returns {Promise<{ success: boolean, publicKey?: string }>}
+ */
 export async function handleCreateKey(service) {
     const client = global.noonaRedisClient;
     const keyName = `NOONA:TOKEN:${service}`;
@@ -27,6 +41,12 @@ export async function handleCreateKey(service) {
     }
 }
 
+/**
+ * POST /v2/redis/publicKey/create
+ * Body: { service: "noona-portal" }
+ *
+ * Returns 201 with key and Redis key name if successful.
+ */
 router.post('/', async (req, res) => {
     const { service } = req.body;
 
@@ -55,6 +75,10 @@ router.post('/', async (req, res) => {
     });
 });
 
+/**
+ * Route metadata used by Noona's dynamic route loader.
+ * @type {{ path: string, authLevel: string, description: string }}
+ */
 export const routeMeta = {
     path: '/v2/redis/publicKey/create',
     authLevel: 'public',

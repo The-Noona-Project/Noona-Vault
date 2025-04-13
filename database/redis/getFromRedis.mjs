@@ -1,15 +1,21 @@
-// /database/redis/getFromRedis.mjs
+/**
+ * @fileoverview
+ * Retrieves the value for a specified Redis key using a Redis client instance.
+ * Returns null if the client is invalid or if the key does not exist.
+ *
+ * @module getFromRedis
+ */
 
 import { printDebug, printError } from '../../noona/logger/logUtils.mjs';
 
 /**
- * Retrieves the value for a specified Redis key asynchronously.
+ * Gets a value from Redis using a given key.
  *
- * Returns the value if present; otherwise, logs an error or debug message and returns null. This occurs when
- * the Redis client is invalid/disconnected, the key is not found, or an error happens during retrieval.
- *
- * @param {string} key - The Redis key to retrieve.
- * @returns {Promise<string|null>} A promise that resolves to the retrieved value or null.
+ * @async
+ * @function
+ * @param {import('redis').RedisClientType} client - Connected Redis client
+ * @param {string} key - Redis key to retrieve
+ * @returns {Promise<string|null>} The string value if found, or null if not found/error
  */
 export async function getFromRedis(client, key) {
     if (!client || typeof client.get !== 'function') {
