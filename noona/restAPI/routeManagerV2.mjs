@@ -1,17 +1,21 @@
-/**
- * Dynamically mounts all available `/v2/*/
-/*.mjs` routes under Express.
- *
- * @async
- * @function
- * @param {import('express').Express} app - The Express app instance to attach routes to
- *
- * @example
- * // This will mount:
- * // - /v2/mongodb/notifications/create
- * // - /v2/system/health/databaseHealth
- * // and so on...
- */
+// ✅ /noona/restAPI/routeManagerV2.mjs — Auto-Mounts All /v2 Routes
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import express from 'express';
+
+import { printResult, printError } from '../logger/logUtils.mjs';
+import authLock from './middleware/authLock.mjs';
+
+// ─────────────────────────────────────────────
+// 🧠 Resolve __dirname for ESM
+// ─────────────────────────────────────────────
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ─────────────────────────────────────────────
+// 🌐 Mount All V2 Routes (Dynamic, Per-Service)
+// ─────────────────────────────────────────────
 export async function mountRoutesV2(app) {
     const v2Base = path.join(__dirname, 'v2');
     const categories = await fs.readdir(v2Base);
@@ -34,17 +38,16 @@ export async function mountRoutesV2(app) {
                 const routeFile = path.join(actionPath, file);
                 try {
                     const routeModule = await import(routeFile);
+                    const routePath = `/v2/${category}/${action}/${file.replace('.mjs', '')}`;
 
                     if (!routeModule.default) {
-                        printError(`❌ ❌ Skipped /v2/${category}/${action}/${file.replace('.mjs', '')} — no default export`);
+                        printError(`❌ ❌ Skipped ${routePath} — no default export`);
                         continue;
                     }
 
-                    const routePath = `/v2/${category}/${action}/${file.replace('.mjs', '')}`;
-                    const isExplicitPublic = publicRoutes.includes(routePath);
-                    const isSystem = category === 'system';
+                    const isPublic = category === 'system';
 
-                    if (isExplicitPublic || isSystem) {
+                    if (isPublic) {
                         app.use(routePath, routeModule.default);
                         printResult(`✔ 🌐 Public Route: ${routePath}`);
                     } else {
@@ -59,5 +62,5 @@ export async function mountRoutesV2(app) {
         }
     }
 
-    printResult('✔ ✅ Routes mounted');
+    printResult('✔ ✅ All /v2 routes mounted successfully');
 }

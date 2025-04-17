@@ -30,7 +30,7 @@ import { printDebug, printError } from '../../logger/logUtils.mjs';
  * @example
  * app.use('/v2/protected/route', authLock, myRouteHandler);
  */
-export async function authLock(req, res, next) {
+export default async function authLock(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader?.split(' ')[1];
 
